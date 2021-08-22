@@ -423,19 +423,22 @@ void setup()
 
 void loop()
 {
+  //evalute array 1 and write to array 2
   for (int i = 1; i < arrayDigits; i++) {
     array2[array1[i]]++;
     delay(5);
   }
 
+  //print array 1
   for (int j = 1; j < arrayDigits; j++)
   {
     Serial.print(array1[j]);
     Serial.print(" ");
-    delay(5);
   }
   Serial.println(" ");
-  for (long k = 1; k < 60; k++)
+
+  //print array2
+  for (int k = 1; k < 60; k++)
   {
     Serial.print("number ");
     Serial.print(k);
@@ -445,6 +448,11 @@ void loop()
     delay(5);
   }
 
+  //reset array
+  for (int l = 1; l < 60; l++) {
+    array2[l] = 0;
+  }
+
   Serial.println(" ");
-  delay(10000);
+  delay(20000);
 }
