@@ -16,7 +16,7 @@
 
 const String p_project = "Lottery Evaluator";
 const uint8_t version_hi = 0;
-const uint8_t version_lo = 1;
+const uint8_t version_lo = 2;
 const int arrayDigits = 2653;
 const long array1[] = {
   11, 19, 20, 30, 35, 49, 44,
