@@ -55,7 +55,7 @@ int brightness = 0;    // how bright the LED is
 int fadeAmount = 1;    // how many points to fade the LED by
 //--------------------------
 //------- version stuff --------
-const String p_project = "Magic 8 Ball";
+const String p_project = "My Pico Clock";
 const uint8_t version_hi = 0;
 const uint8_t version_lo = 3;
 //--------------------------
@@ -121,7 +121,7 @@ void playNote(int frequency, int duration, bool hold = false, bool measure = tru
 
 //------- version stuffs --------
 void versionPrint (void) {
-  Serial.print ("RicksWorx: ");
+  Serial.print ("JediRick: ");
   Serial.println (p_project);
   Serial.print ("Version: ");
   Serial.print (version_hi);
