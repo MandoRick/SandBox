@@ -54,6 +54,11 @@ int color = 0xF800;
 int brightness = 0;    // how bright the LED is
 int fadeAmount = 1;    // how many points to fade the LED by
 //--------------------------
+//------- version stuff --------
+const String p_project = "Magic 8 Ball";
+const uint8_t version_hi = 0;
+const uint8_t version_lo = 3;
+//--------------------------
 //------- rtc stuff --------
 byte currentHour;
 byte currentMinute;
@@ -114,10 +119,23 @@ void playNote(int frequency, int duration, bool hold = false, bool measure = tru
 }
 //--------------------------
 
+//------- version stuffs --------
+void versionPrint (void) {
+  Serial.print ("RicksWorx: ");
+  Serial.println (p_project);
+  Serial.print ("Version: ");
+  Serial.print (version_hi);
+  Serial.print ('.');
+  Serial.print (version_lo);
+  Serial.print ("  ");
+}
+//--------------------------
+
 //------- setup one --------
 void setup() {
   delay(2000);
   Serial.begin(115200);
+  versionPrint();
   Wire.setSDA(0);
   Wire.setSCL(1);
   Wire.begin();
