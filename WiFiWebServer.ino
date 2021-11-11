@@ -25,8 +25,8 @@
 #include <WiFiNINA.h>
 #define ledPin  LED_BUILTIN
 
-char ssid[] = "";
-char pass[] = "";
+char ssid[] = "VM0604409";
+char pass[] = "qv3TqmgtPgrc";
 bool rainbowActive = false;
 word led1Brightness = 0;
 word fadeAmount1 = 1;
@@ -39,11 +39,11 @@ int status = WL_IDLE_STATUS;
 WiFiServer server(80);
 
 //------- version stuff --------
-const String p_project = "timer";
+const String p_project = "Ricks Wifi Server";
 const uint8_t version_hi = 0;
 const uint8_t version_lo = 1;
 void versionPrint(void) {
-  Serial.print("RicksWorx: ");
+  Serial.print("JediWorx: ");
   Serial.println(p_project);
   Serial.print("Version: ");
   Serial.print(version_hi);
