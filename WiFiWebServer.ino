@@ -25,8 +25,8 @@
 #include <WiFiNINA.h>
 #define ledPin  LED_BUILTIN
 
-char ssid[] = "VM0604409";
-char pass[] = "qv3TqmgtPgrc";
+char ssid[] = "wifi_id";
+char pass[] = "password";
 bool rainbowActive = false;
 word led1Brightness = 0;
 word fadeAmount1 = 1;
