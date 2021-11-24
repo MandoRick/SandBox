@@ -22,7 +22,6 @@ def clickCalculate():
     global entry    
     string= entry.get()
     var = float(string)    
-
     
     if tkvar.get() == 'USD':              
         newLabel1 = var * USD
