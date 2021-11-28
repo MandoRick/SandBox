@@ -22,6 +22,7 @@ def clickCalculate():
     global entry    
     string= entry.get()
     var = float(string)    
+
     
     if tkvar.get() == 'USD':              
         newLabel1 = var * USD
@@ -84,4 +85,3 @@ entry.pack()
 myButton = Button(root, text="CALCULATE", font=("Courier 16 bold"), command=clickCalculate, bg="#202020", fg="#0088FF")
 myButton.pack(pady=25)
 root.mainloop()
-
