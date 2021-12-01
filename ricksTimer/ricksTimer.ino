@@ -3,7 +3,7 @@
  * 
  *              BOARD                 MICROS
  * 
- *    ESP32                             246
+ *    ESP-WROOM-32 DevKit               246
  *    rasPi Pico:                      1334
  *    Arduino Nano RP2040 Connect:     1408
  *    Arduino Due:                     4464
