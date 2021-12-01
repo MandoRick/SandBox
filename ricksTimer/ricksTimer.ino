@@ -1,6 +1,8 @@
 /*    
- *    Timer by JediRick 
- *     
+ *                  Timer by JediRick
+ * 
+ *              BOARD                 MICROS
+ * 
  *    rasPi Pico:                     1334
  *    Arduino Nano RP2040 Connect:    1408
  *    Arduino Due:                    4464
