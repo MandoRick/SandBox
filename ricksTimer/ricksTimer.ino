@@ -9,7 +9,7 @@
  *    pro Micro:                      10560
  *    elegoo Mega 2650:               11224
  *    
-*/
+ */
 
 #define ledPin LED_BUILTIN
 word delayBetweenTimings = 1000;
