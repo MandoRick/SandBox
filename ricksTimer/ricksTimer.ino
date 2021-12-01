@@ -11,6 +11,7 @@
  *    pro Micro:                      10560
  *    elegoo Mega 2650:               11224
  *    
+ *    thx for testing:  Dx_sniper, Scrapyboy, DaOfficialWizard
  */
 
 #define ledPin LED_BUILTIN
