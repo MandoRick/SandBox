@@ -3,14 +3,14 @@
  * 
  *              BOARD                 MICROS
  * 
- *    ESP-WROOM-32 DevKit               246
- *    rasPi Pico:                      1334
- *    Arduino Nano RP2040 Connect:     1408
- *    Arduino Due:                     4464
- *    Arduino Nano Every:              6854
- *    Arduino Uno:                     6904
- *    pro Micro:                      10560
- *    elegoo Mega 2650:               11224
+ *    ESP32                             246
+ *    rasPi Pico                       1334
+ *    Arduino Nano RP2040 Connect      1408
+ *    Arduino Due                      4464
+ *    Arduino Nano Every               6854
+ *    Arduino Uno                      6904
+ *    pro Micro                       10560
+ *    elegoo Mega 2650                11224
  *    
  *    thx for testing:  Dx_sniper, Scrapyboy, DaOfficialWizard
  */
