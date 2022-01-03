@@ -37,58 +37,96 @@
   r = Revolution Per Minute(RPM)
 */
 
+#define sensorPin1 32
+#define sensorPin2 35
 #include <SPI.h>
 #include <TFT_eSPI.h>
 TFT_eSPI tft = TFT_eSPI();
-#define sensorPin 32
+//#define sensorPin 32
 
-unsigned long TimerCount;
-unsigned long previousTimerCount;
+bool sensorState1 = true;
+bool sensorState2 = true;
+bool flipFlop = false;
+bool udpateDisplay = true;
 
 byte kilosPerHour = 0;
-byte wheelDiamter = 28;
-unsigned int revPerMinute = 0;
+byte wheelDiam = 28;
+unsigned long revsPerMin = 0;
 unsigned long finalSpeedKph = 0;
-int pinState;
+uint32_t rotationCount;
+
+unsigned long currentMillis;
+unsigned long previousMillis = 0;
+unsigned long rotationTime;
 
 void setup() {
   delay(2000);
   Serial.begin(115200);
-  pinMode(sensorPin, INPUT);
+  pinMode(sensorPin1, INPUT_PULLUP);
+  pinMode(sensorPin2, INPUT_PULLUP);
+  setupDisplay();
+  delay(1000);
+  currentMillis = millis();
+  previousMillis = millis();
+}
+
+void loop() {
+  calculateSpeed();
+  drawDisplay();
+}
+
+void setupDisplay() {
   tft.init();
   tft.setRotation(1);
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_GREEN);
   tft.setTextSize(2);
-  TimerCount = millis();
-  previousTimerCount = millis();
-
-}
-
-void loop() {
-  calculateRpm();
-  calculateSpeed();
-  drawDisplay();
-  TimerCount = millis();
-  //LCDprintValue = (((unsigned long)41887.8) / (TimerCount - previousTimerCount));
-  previousTimerCount = TimerCount;
-}
-
-void calculateRpm() {
-  pinState = digitalRead(sensorPin);
-  if (pinState == HIGH) {
-    Serial.println("HIGH");
-  } else {
-    Serial.println("LOW");
-  }
+  tft.drawLine(0, 175, 320, 175, TFT_GREEN);
+  tft.setCursor(20, 60);
+  tft.println("KPH");
+  tft.setCursor(20, 130);
+  tft.println("RPM");
 }
 
 void calculateSpeed() {
-  finalSpeedKph = wheelDiamter * revPerMinute * 0.001885;
+  if (digitalRead(sensorPin1) == 0) {
+    //Serial.println("Sensor 1 LOW");
+    sensorState1 = false;
+  }
+  if (digitalRead(sensorPin2) == 0) {
+    //Serial.println("Sensor 2 LOW");
+    sensorState2 = false;
+  }
+  if (sensorState1 == false && sensorState2 == false) {
+    sensorState1 = true;
+    sensorState2 = true;
+    flipFlop = !flipFlop;
+    if (flipFlop == true) {
+      currentMillis = millis();
+      rotationTime = currentMillis - previousMillis;
+      revsPerMin = 60000 / rotationTime;
+      previousMillis = currentMillis;
+      rotationCount += 1;
+      finalSpeedKph = wheelDiam * revsPerMin * 0.001885;
+      udpateDisplay = true;
+      Serial.printf("Sensor triggered %u times\n", rotationCount);
+      Serial.printf("Rotation time %u millis\n", rotationTime);
+      Serial.printf("Rotation %u RPM\n", revsPerMin);
+      Serial.printf("Speed %u KPH\n", finalSpeedKph);
+    }
+  }
 }
 
 void drawDisplay() {
-  //tft.fillRect(130, 180, 240, 250, 0x0000);
-  tft.drawLine(0, 163, 320, 163, TFT_GREEN);
-  tft.println(finalSpeedKph);
+  if (udpateDisplay == true) {
+    tft.setTextSize(5);
+    tft.fillRect(100, 50, 150, 100, TFT_BLACK);
+    tft.setTextColor(TFT_GREEN);
+    tft.setCursor(100, 50);
+    tft.println(finalSpeedKph);
+    tft.setTextSize(3);
+    tft.setCursor(100, 120);
+    tft.println(revsPerMin);
+    udpateDisplay = false;
+  }
 }
