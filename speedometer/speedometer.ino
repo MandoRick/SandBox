@@ -43,6 +43,7 @@
 #define wheelDiam 28
 #define sensorPin1 32
 #define sensorPin2 35
+#define tempSensor 36
 
 #include <SPI.h>
 #include <TFT_eSPI.h>
@@ -61,6 +62,7 @@ uint32_t rotationCount;
 unsigned long currentMillis;
 unsigned long previousMillis = 0;
 unsigned long rotationTime;
+int16_t currentTemp;
 
 void setup() {
   delay(2000);
@@ -75,6 +77,7 @@ void setup() {
 
 void loop() {
   calculateSpeed();
+  checkTemp();
   drawDisplay();
 }
 
@@ -84,11 +87,13 @@ void setupDisplay() {
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_GREEN);
   tft.setTextSize(2);
-  tft.drawLine(0, 175, 320, 175, TFT_GREEN);
-  tft.setCursor(20, 60);
+  tft.drawLine(0, 200, 320, 200, TFT_GREEN);
+  tft.setCursor(20, 25);
   tft.println("KPH");
-  tft.setCursor(20, 130);
+  tft.setCursor(20, 100);
   tft.println("RPM");
+  tft.setCursor(20, 150);
+  tft.println("TEMP");
 }
 
 void calculateSpeed() {
@@ -120,16 +125,28 @@ void calculateSpeed() {
   }
 }
 
+void checkTemp() {
+  uint16_t tempValue = analogRead(tempSensor);
+  float pinVoltage = (tempValue / 4096) * 5;
+  float tempCelcius = (pinVoltage - 0.5) * 100;
+  currentTemp = tempCelcius;
+  //Serial.println("temp C: " +(String)tempCelcius);
+}
+
 void drawDisplay() {
   if (udpateDisplay == true) {
     tft.setTextSize(7);
-    tft.fillRect(100, 50, 200, 100, TFT_BLACK);
+    tft.fillRect(100, 0, 200, 170, TFT_BLACK);
     tft.setTextColor(TFT_GREEN);
-    tft.setCursor(100, 50);
+    tft.setCursor(100, 25);
     tft.println(finalSpeedKph);
     tft.setTextSize(4);
-    tft.setCursor(100, 120);
+    tft.setCursor(100, 100);
     tft.println(revsPerMin);
+    tft.setTextSize(3);
+    tft.setCursor(100, 150);
+    tft.print(currentTemp);
+    tft.println("`C");
     udpateDisplay = false;
   }
 }
