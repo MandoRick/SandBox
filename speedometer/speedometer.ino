@@ -45,6 +45,15 @@
 #define sensorPin2 35
 #define tempSensor 36
 
+#define debug 0     // 1 ON 0 OFF
+#if debug == 1
+#define debugln(x) Serial.println(x)
+#define debug(x) Serial.print(x)
+#else
+#define debugln(x)
+#define debug(x)
+#endif
+
 #include <SPI.h>
 #include <TFT_eSPI.h>
 TFT_eSPI tft = TFT_eSPI();
@@ -98,11 +107,11 @@ void setupDisplay() {
 
 void calculateSpeed() {
   if (digitalRead(sensorPin1) == 0) {
-    //Serial.println("Sensor 1 LOW");
+    debugln("Sensor 1 LOW");
     sensorState1 = false;
   }
   if (digitalRead(sensorPin2) == 0) {
-    //Serial.println("Sensor 2 LOW");
+    debugln("Sensor 2 LOW");
     sensorState2 = false;
   }
   if (sensorState1 == false && sensorState2 == false) {
@@ -117,10 +126,10 @@ void calculateSpeed() {
       rotationCount += 1;
       finalSpeedKph = wheelDiam * revsPerMin * 0.001885;
       udpateDisplay = true;
-      //Serial.printf("Sensor triggered %u times\n", rotationCount);
-      //Serial.printf("Rotation time %u millis\n", rotationTime);
-      //Serial.printf("Rotation %u RPM\n", revsPerMin);
-      //Serial.printf("Speed %u KPH\n", finalSpeedKph);
+      debugln("Sensor triggered times: " + (String)rotationCount);
+      debugln("Rotation time  millis: " + (String)rotationTime);
+      debugln("Rotation RPM: " + (String)revsPerMin);
+      debugln("Speed KPH: " + (String)finalSpeedKph);
     }
   }
 }
@@ -130,7 +139,7 @@ void checkTemp() {
   float pinVoltage = (tempValue / 4096) * 5;
   float tempCelcius = (pinVoltage - 0.5) * 100;
   currentTemp = tempCelcius;
-  //Serial.println("temp C: " +(String)tempCelcius);
+  debugln("temp C: " +(String)tempCelcius);
 }
 
 void drawDisplay() {
