@@ -28,21 +28,25 @@
 */
 
 /*
-  Formula:
+  Formulae:
+  r = m / t
   k = d × r × 0.001885
 
   Where:
   k = Kilometer Per Hour(km/hr)
   d = Wheel Diameter(cm)
   r = Revolution Per Minute(RPM)
+  m = Millis 60000 per minute
+  t = Time taken for rotation
 */
 
+#define wheelDiam 28
 #define sensorPin1 32
 #define sensorPin2 35
+
 #include <SPI.h>
 #include <TFT_eSPI.h>
 TFT_eSPI tft = TFT_eSPI();
-//#define sensorPin 32
 
 bool sensorState1 = true;
 bool sensorState2 = true;
@@ -50,7 +54,6 @@ bool flipFlop = false;
 bool udpateDisplay = true;
 
 byte kilosPerHour = 0;
-byte wheelDiam = 28;
 unsigned long revsPerMin = 0;
 unsigned long finalSpeedKph = 0;
 uint32_t rotationCount;
@@ -119,12 +122,12 @@ void calculateSpeed() {
 
 void drawDisplay() {
   if (udpateDisplay == true) {
-    tft.setTextSize(5);
+    tft.setTextSize(7);
     tft.fillRect(100, 50, 150, 100, TFT_BLACK);
     tft.setTextColor(TFT_GREEN);
     tft.setCursor(100, 50);
     tft.println(finalSpeedKph);
-    tft.setTextSize(3);
+    tft.setTextSize(4);
     tft.setCursor(100, 120);
     tft.println(revsPerMin);
     udpateDisplay = false;
