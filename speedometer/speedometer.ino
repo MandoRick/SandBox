@@ -123,7 +123,7 @@ void calculateSpeed() {
 void drawDisplay() {
   if (udpateDisplay == true) {
     tft.setTextSize(7);
-    tft.fillRect(100, 50, 150, 100, TFT_BLACK);
+    tft.fillRect(100, 50, 200, 100, TFT_BLACK);
     tft.setTextColor(TFT_GREEN);
     tft.setCursor(100, 50);
     tft.println(finalSpeedKph);
