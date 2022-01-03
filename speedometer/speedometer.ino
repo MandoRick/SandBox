@@ -63,7 +63,7 @@ bool sensorState2 = true;
 bool flipFlop = false;
 bool udpateDisplay = true;
 
-byte kilosPerHour = 0;
+uint8_t kilosPerHour = 0;
 unsigned long revsPerMin = 0;
 unsigned long finalSpeedKph = 0;
 uint32_t rotationCount;
