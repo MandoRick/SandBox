@@ -117,10 +117,10 @@ void calculateSpeed() {
       rotationCount += 1;
       finalSpeedKph = wheelDiam * revsPerMin * 0.001885;
       udpateDisplay = true;
-      Serial.printf("Sensor triggered %u times\n", rotationCount);
-      Serial.printf("Rotation time %u millis\n", rotationTime);
-      Serial.printf("Rotation %u RPM\n", revsPerMin);
-      Serial.printf("Speed %u KPH\n", finalSpeedKph);
+      //Serial.printf("Sensor triggered %u times\n", rotationCount);
+      //Serial.printf("Rotation time %u millis\n", rotationTime);
+      //Serial.printf("Rotation %u RPM\n", revsPerMin);
+      //Serial.printf("Speed %u KPH\n", finalSpeedKph);
     }
   }
 }
