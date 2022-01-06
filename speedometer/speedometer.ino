@@ -48,7 +48,7 @@ ESP32Time rtc;
 
 #define screenOrientation 1
 
-#define debugger 1     // 1 ON 0 OFF
+#define debugger 0     // 1 ON 0 OFF
 #if debugger == 1
 #define debugln(x) Serial.println(x)
 #define debug(x) Serial.print(x)
@@ -68,9 +68,7 @@ ESP32Time rtc;
 #define wheelDiam 28
 #define sensorPin1 32
 #define sensorPin2 35
-#define tempSensor 0
 #define pi 3.14159
-
 
 #define buttonPin1 2
 #define buttonPin2 34
@@ -78,10 +76,22 @@ ESP32Time rtc;
 #define buttonPin4 15
 #define buttonPin5 33
 
-int rtcCurrentHour = 0;
-int rtcCurrentMinute = 0;
-int rtcCurrentDay = 5;
-int rtcCurrentMonth = 1;
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+uint8_t temprature_sens_read();
+
+#ifdef __cplusplus
+}
+#endif
+
+uint8_t temprature_sens_read();
+uint8_t currentTemp;
+uint8_t rtcCurrentHour = 0;
+uint8_t rtcCurrentMinute = 0;
+uint8_t rtcCurrentDay = 5;
+uint8_t rtcCurrentMonth = 1;
 
 bool sensorState1 = true;
 bool sensorState2 = true;
@@ -98,7 +108,9 @@ float distanceTraveled;
 unsigned long currentMillis;
 unsigned long previousMillis = 0;
 unsigned long rotationTime;
-int16_t currentTemp;
+
+uint16_t grassPixelCount = 220;
+bool grassPixelFlipFlop = true;
 
 //------- duration timer stuff --------
 const unsigned long onTime1 = 10;
@@ -151,16 +163,21 @@ void setupDisplay() {
   tft.setFreeFont(FMB12);
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_RED);
-  tft.setCursor(20, 30);
+  tft.setCursor(20, 40);
   tft.println("KPH");
-  tft.setCursor(20, 65);
+  tft.setCursor(25, 82);
+  tft.println("KM");
+  tft.setCursor(20, 118);
   tft.println("RPM");
-  tft.setCursor(20, 100);
-  tft.println("TEMP");
-  tft.setCursor(20, 135);
-  tft.println("DIST");
-  tft.drawLine(0, 160, 320, 160, TFT_SKYBLUE);
-  tft.setCursor(20, 210);
+  tft.setCursor(20, 152);
+  tft.println("'C");
+  tft.drawLine(0, 165, 320, 165, TFT_SKYBLUE);
+  tft.drawLine(80, 0, 80, 240, TFT_SKYBLUE);
+  tft.drawRect(270, 40, 40, 100, TFT_SKYBLUE);
+  tft.drawRect(280, 30, 20, 10, TFT_SKYBLUE);
+  tft.fillRect(275, 45, 30, 70, TFT_GREEN);
+  tft.fillRect(275, 115, 30, 20, TFT_RED);
+  tft.setCursor(10, 210);
   tft.println("TIME");
 }
 
@@ -196,35 +213,31 @@ void calculateSpeed() {
   }
 }
 
-
-
 void checkTemp() {
-  float tempPinVoltage = analogRead(tempSensor);
-  tempPinVoltage = tempPinVoltage * 0.00122100;
-  currentTemp = (tempPinVoltage - 0.5) * 100.0;
-  debugln("temp C: " + (String)currentTemp);
+  currentTemp = ((temprature_sens_read() - 32) / 1.8);
+  debug(currentTemp);
+  debugln(" C");
 }
 
 void drawDisplay() {
   //tft.init();
   if (udpateDisplay == true) {
-    tft.setFreeFont(FSB24);
+    //tft.setFreeFont(FMB24);
+    tft.setTextFont(7);
     tft.setTextColor(TFT_GREEN);
-    tft.fillRect(95, 0, 170, 40, TFT_BLACK);
-    tft.setCursor(100, 35);
+    tft.fillRect(95, 0, 170, 55, TFT_BLACK);
+    tft.setCursor(100, 5);
     tft.println(finalSpeedKph);
-    tft.setFreeFont(FSB18);
-    tft.fillRect(95, 40, 170, 35, TFT_BLACK);
-    tft.setCursor(100, 70);
+    tft.setFreeFont(FF15);
+    tft.fillRect(95, 55, 170, 35, TFT_BLACK);
+    tft.setCursor(100, 85);
+    tft.println(distanceTraveled);
+    tft.fillRect(95, 90, 170, 35, TFT_BLACK);
+    tft.setCursor(100, 120);
     tft.println(revsPerMin);
-    tft.fillRect(95, 75, 170, 35, TFT_BLACK);
-    tft.setCursor(100, 105);
-    tft.print(currentTemp);
-    tft.println(" 'C");
-    tft.fillRect(95, 110, 170, 35, TFT_BLACK);
-    tft.setCursor(100, 140);
-    tft.print(distanceTraveled);
-    tft.println(" km");
+    tft.fillRect(95, 125, 170, 35, TFT_BLACK);
+    tft.setCursor(100, 155);
+    tft.println(currentTemp);
     udpateDisplay = false;
   }
 }
@@ -240,21 +253,27 @@ void drawDuration() {
       //off time
       tft.setFreeFont(FMB12);
       tft.setTextColor(TFT_YELLOW);
-      tft.fillRect(95, 175, 170, 20, TFT_BLACK);
+      tft.fillRect(95, 175, 130, 20, TFT_BLACK);
       tft.setCursor(128, 190);
       tft.println(":");
       tft.setCursor(170, 190);
       tft.println(":");
       tft.setCursor(100, 190);
       stopWatch(millis() / 1000);
-      tft.fillRect(95, 195, 170, 20, TFT_BLACK);
+      tft.fillRect(95, 195, 130, 20, TFT_BLACK);
       tft.setTextColor(TFT_PINK);
       tft.setCursor(100, 210);
       tft.println(rtc.getTime());
-      tft.fillRect(95, 215, 170, 20, TFT_BLACK);
+      tft.fillRect(95, 215, 130, 20, TFT_BLACK);
       tft.setCursor(100, 230);
       tft.println(rtc.getTime("%D"));
       struct tm timeinfo = rtc.getTimeStruct();
+      uint16_t distanceMap = distanceTraveled * 100;
+      uint8_t batteryMap = map(distanceMap, 0, 1500, 90, 0);
+      //testing
+      //distanceTraveled = distanceTraveled + 1;
+      //end testing
+      tft.fillRect(275, 45, 30, 90 - batteryMap, TFT_BLACK);
     }
     triggerState1 = !(triggerState1);
     previousMillis1 = currentMillis1;
@@ -278,17 +297,49 @@ void wheelAnimationTiming() {
 }
 
 void drawWheel() {
-  tft.fillCircle(290, 215 , 20, TFT_BLACK);
+  tft.fillCircle(290, 215 , 13, TFT_BLACK);
+  tft.fillCircle(250, 215 , 13, TFT_BLACK);
   if (wheelFlop == true) {
     tft.drawLine(280, 205, 300, 225, TFT_YELLOW);
     tft.drawLine(300, 205, 280, 225, TFT_YELLOW);
+    tft.drawLine(250, 200, 250, 230, TFT_YELLOW);
+    tft.drawLine(235, 215, 265, 215, TFT_YELLOW);
     wheelFlop = false;
   } else {
     tft.drawLine(290, 200, 290, 230, TFT_YELLOW);
     tft.drawLine(275, 215, 305, 215, TFT_YELLOW);
+    tft.drawLine(240, 205, 260, 225, TFT_YELLOW);
+    tft.drawLine(260, 205, 240, 225, TFT_YELLOW);
     wheelFlop = true;
   }
   tft.drawCircle(290, 215 , 15, TFT_ORANGE);
+  tft.drawCircle(250, 215 , 15, TFT_ORANGE);
+  tft.drawCircle(290, 215 , 14, TFT_ORANGE);
+  tft.drawCircle(250, 215 , 14, TFT_ORANGE);
+  tft.drawCircle(290, 215 , 13, TFT_ORANGE);
+  tft.drawCircle(250, 215 , 13, TFT_ORANGE);
+  tft.drawLine(250, 215, 260, 180, TFT_YELLOW);
+  tft.drawLine(250, 216, 261, 180, TFT_YELLOW);
+  tft.drawLine(260, 180, 267, 180, TFT_YELLOW);
+  tft.drawLine(250, 215, 290, 215, TFT_YELLOW);
+  tft.drawLine(250, 216, 290, 216, TFT_YELLOW);
+
+  grassPixelCount = grassPixelCount + 5;
+  if (grassPixelFlipFlop == true) {
+    tft.drawLine(grassPixelCount, 232, grassPixelCount + 4, 232, TFT_SKYBLUE);
+    tft.drawLine(grassPixelCount, 233, grassPixelCount + 4, 233, TFT_RED);
+    tft.drawLine(grassPixelCount, 234, grassPixelCount + 4, 234, TFT_SKYBLUE);
+  }
+  if (grassPixelFlipFlop == false) {
+    tft.drawLine(grassPixelCount, 232, grassPixelCount + 4, 232, TFT_RED);
+    tft.drawLine(grassPixelCount, 233, grassPixelCount + 4, 233, TFT_SKYBLUE);
+    tft.drawLine(grassPixelCount, 234, grassPixelCount + 4, 234, TFT_RED);
+  }
+  if (grassPixelCount >= 310) {
+    grassPixelCount = 220;
+    grassPixelFlipFlop = !grassPixelFlipFlop;
+  }
+
 }
 
 void stopWatch(long val) {
@@ -321,26 +372,26 @@ void checkButtons() {
   bool buttonState5 = digitalRead(buttonPin5);
   if (buttonState1 == HIGH) {
     debugln("Button 1 Pressed");
-    rtcCurrentHour = rtcCurrentHour + 1;    
+    rtcCurrentHour = rtcCurrentHour + 1;
     rtc.setTime(00, rtcCurrentMinute, rtcCurrentHour, rtcCurrentDay, rtcCurrentMonth, 2022);
   }
   if (buttonState2 == HIGH) {
     debugln("Button 2 Pressed");
     rtcCurrentMinute = rtcCurrentMinute + 1;
-    rtc.setTime(00, rtcCurrentMinute, rtcCurrentHour, rtcCurrentDay, rtcCurrentMonth, 2022); 
+    rtc.setTime(00, rtcCurrentMinute, rtcCurrentHour, rtcCurrentDay, rtcCurrentMonth, 2022);
   }
-  if (buttonState3 == HIGH) {    
+  if (buttonState3 == HIGH) {
     debugln("Button 3 Pressed");
-        rtcCurrentMonth = rtcCurrentMonth + 1;
+    rtcCurrentMonth = rtcCurrentMonth + 1;
     rtc.setTime(00, rtcCurrentMinute, rtcCurrentHour, rtcCurrentDay, rtcCurrentMonth, 2022);
   }
   if (buttonState4 == HIGH) {
     debugln("Button 4 Pressed");
-        rtcCurrentDay = rtcCurrentDay + 1;
+    rtcCurrentDay = rtcCurrentDay + 1;
     rtc.setTime(00, rtcCurrentMinute, rtcCurrentHour, rtcCurrentDay, rtcCurrentMonth, 2022);
   }
   if (buttonState5 == HIGH) {
     debugln("Button 5 Pressed");
-    resetFunc(); //call reset 
+    resetFunc(); //call reset
   }
 }
