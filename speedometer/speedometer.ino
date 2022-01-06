@@ -103,7 +103,7 @@ uint8_t kilosPerHour = 0;
 unsigned long revsPerMin = 0;
 float finalSpeedKph = 0;
 uint32_t rotationCount;
-float distanceTraveled;
+float distanceTraveled = 0;
 
 unsigned long currentMillis;
 unsigned long previousMillis = 0;
@@ -202,6 +202,9 @@ void calculateSpeed() {
       previousMillis = currentMillis;
       rotationCount += 1;
       finalSpeedKph = wheelDiam * revsPerMin * 0.001885;
+      if (finalSpeedKph >= 100){
+        finalSpeedKph = 99.99;
+      }
       distanceTraveled = ((wheelDiam * pi) * rotationCount) * 0.00001;
       udpateDisplay = true;
       debugln("Sensor triggered times: " + (String)rotationCount);
@@ -225,17 +228,21 @@ void drawDisplay() {
     //tft.setFreeFont(FMB24);
     tft.setTextFont(7);
     tft.setTextColor(TFT_GREEN);
-    tft.fillRect(95, 0, 170, 55, TFT_BLACK);
+    tft.fillRect(95, 0, 160, 55, TFT_BLACK);
+    //tft.drawRect(95, 0, 160, 55, TFT_RED);
     tft.setCursor(100, 5);
     tft.println(finalSpeedKph);
     tft.setFreeFont(FF15);
-    tft.fillRect(95, 55, 170, 35, TFT_BLACK);
+    tft.fillRect(95, 55, 160, 35, TFT_BLACK);
+    //tft.drawRect(95, 55, 160, 35, TFT_RED);
     tft.setCursor(100, 85);
     tft.println(distanceTraveled);
-    tft.fillRect(95, 90, 170, 35, TFT_BLACK);
+    tft.fillRect(95, 90, 160, 35, TFT_BLACK);
+    //tft.drawRect(95, 90, 160, 35, TFT_RED);
     tft.setCursor(100, 120);
     tft.println(revsPerMin);
-    tft.fillRect(95, 125, 170, 35, TFT_BLACK);
+    tft.fillRect(95, 125, 160, 35, TFT_BLACK);
+    //tft.drawRect(95, 125, 160, 35, TFT_RED);
     tft.setCursor(100, 155);
     tft.println(currentTemp);
     udpateDisplay = false;
@@ -254,6 +261,7 @@ void drawDuration() {
       tft.setFreeFont(FMB12);
       tft.setTextColor(TFT_YELLOW);
       tft.fillRect(95, 175, 130, 20, TFT_BLACK);
+      //tft.drawRect(95, 175, 130, 20, TFT_RED);
       tft.setCursor(128, 190);
       tft.println(":");
       tft.setCursor(170, 190);
@@ -261,10 +269,12 @@ void drawDuration() {
       tft.setCursor(100, 190);
       stopWatch(millis() / 1000);
       tft.fillRect(95, 195, 130, 20, TFT_BLACK);
+      //tft.drawRect(95, 195, 130, 20, TFT_RED);
       tft.setTextColor(TFT_PINK);
       tft.setCursor(100, 210);
       tft.println(rtc.getTime());
       tft.fillRect(95, 215, 130, 20, TFT_BLACK);
+      //tft.drawRect(95, 215, 130, 20, TFT_RED);
       tft.setCursor(100, 230);
       tft.println(rtc.getTime("%D"));
       struct tm timeinfo = rtc.getTimeStruct();
