@@ -207,6 +207,7 @@ void setup1() {
 }
 
 void loop() {
+  RGB_color(random(80), random(80), random(80));
   checkTimer1();  //get speed value and time during off time, draw display during on time
 }
 
@@ -842,3 +843,11 @@ void eraseSetupLabel() {
   }
   completedErasing = true;
 }
+
+//------- RGB control --------
+void RGB_color(int red_led_value, int green_led_value, int blue_led_value) {
+  analogWrite(red_led_pin, red_led_value);
+  analogWrite(green_led_pin, green_led_value);
+  analogWrite(blue_led_pin, blue_led_value);
+}
+//--------------------------
