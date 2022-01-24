@@ -138,7 +138,6 @@ void setup() {
   Serial.begin(115200);
   debugln("Serial started");
   versionPrint();
-  pinMode(LED_BUILTIN, OUTPUT);
   attachInterrupt(digitalPinToInterrupt(FLAG_PIN_FILE_LOCK_IN), triggerFlagBusy, RISING);
   attachInterrupt(digitalPinToInterrupt(FLAG_PIN_FILE_UNLOCK_IN), triggerFlagIdle, RISING);
   attachInterrupt(digitalPinToInterrupt(BUTTON_PIN_LEFT), triggerButtonLeft, RISING);
