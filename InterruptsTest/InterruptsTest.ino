@@ -377,7 +377,7 @@ void updateVariables() {
     displayRpmCurrent = revsPerMin;
     displaySpeedKphCurrent = finalSpeedKph;
     displayDistanceKmCurrent = distanceTraveled;
-    rpmRotationAngleCurrent = displayRpmCurrent;
+    rpmRotationAngleCurrent = map(displayRpmCurrent, 0, 1799, 0, 359);
     debugln("rpm: " + (String)displayRpmCurrent);
     debugln("speed: " + (String)displaySpeedKphCurrent);
     debugln("distance: " + (String)displayDistanceKmCurrent);
