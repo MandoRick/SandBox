@@ -48,8 +48,10 @@
 #define SENSOR_PIN1 (10)
 #define SENSOR_PIN2 (11)
 #define SENSOR_PIN3 (12)
-#define FLAG_PIN_OUT (14)
-#define FLAG_PIN_IN (15)
+#define FLAG_PIN_FILE_LOCK_OUT (14)
+#define FLAG_PIN_FILE_LOCK_IN (15)
+#define FLAG_PIN_FILE_UNLOCK_OUT (16)
+#define FLAG_PIN_FILE_UNLOCK_IN (17)
 #define wheelDiam 28  //in cm
 #define pi 3.141592
 
@@ -84,9 +86,9 @@ Adafruit_GC9A01A tft(TFT_CS, TFT_DC, TFT_DIN, TFT_CLK, TFT_RST, TFT_DOUT);
 void setup() {
   delay(2000);
   Serial.begin(115200);
-  pinMode(FLAG_PIN_IN, INPUT);
-  attachInterrupt(digitalPinToInterrupt(FLAG_PIN_IN), triggerFlagBusy, RISING);
-  attachInterrupt(digitalPinToInterrupt(FLAG_PIN_IN), triggerFlagIdle, FALLING);
+  pinMode(FLAG_PIN_FILE_LOCK_IN, INPUT);
+  attachInterrupt(digitalPinToInterrupt(FLAG_PIN_FILE_LOCK_IN), triggerFlagBusy, RISING);
+  attachInterrupt(digitalPinToInterrupt(FLAG_PIN_FILE_UNLOCK_IN), triggerFlagIdle, RISING);
   setupTft();
 }
 
@@ -95,7 +97,8 @@ void setup1() {
   pinMode(SENSOR_PIN1, INPUT);
   pinMode(SENSOR_PIN2, INPUT);
   pinMode(SENSOR_PIN3, INPUT);
-  pinMode(FLAG_PIN_OUT, OUTPUT);
+  pinMode(FLAG_PIN_FILE_LOCK_OUT, OUTPUT);
+  pinMode(FLAG_PIN_FILE_UNLOCK_OUT, OUTPUT);
   attachInterrupt(digitalPinToInterrupt(SENSOR_PIN1), triggerSensor1, RISING);
   attachInterrupt(digitalPinToInterrupt(SENSOR_PIN2), triggerSensor2, RISING);
   attachInterrupt(digitalPinToInterrupt(SENSOR_PIN3), triggerSensor3, RISING);
@@ -140,7 +143,8 @@ void checkSensors() {
 }
 
 void countRotation() {
-  digitalWrite(FLAG_PIN_OUT, HIGH);  //lock variables being written to
+  digitalWrite(FLAG_PIN_FILE_UNLOCK_OUT, LOW);
+  digitalWrite(FLAG_PIN_FILE_LOCK_OUT, HIGH);  //lock variables being written to
   currentMicros = micros();
   rotationTime = currentMicros - previousMicros;
   rotationCount++;
@@ -148,7 +152,8 @@ void countRotation() {
   previousMicros = currentMicros;
   finalSpeedKph = wheelDiam * revsPerMin * 0.001885;
   distanceTraveled = ((wheelDiam * pi) * rotationCount) * 0.00001;
-  digitalWrite(FLAG_PIN_OUT, LOW);  //unlock variables
+  digitalWrite(FLAG_PIN_FILE_LOCK_OUT, LOW);  //unlock variables
+  digitalWrite(FLAG_PIN_FILE_UNLOCK_OUT, HIGH);
 }
 
 void setupTft() {
