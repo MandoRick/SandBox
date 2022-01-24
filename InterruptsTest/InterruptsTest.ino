@@ -55,48 +55,104 @@
 #define wheelDiam 28  //in cm
 #define pi 3.141592
 
+#define myDebug 1     // 1 ON 0 OFF
+#if myDebug == 1
+#define debugln(x) Serial.println(x)
+#define debug(x) Serial.print(x)
+#else
+#define debugln(x)
+#define debug(x)
+#endif
+
+#define BUTTON_PIN_LEFT (8)
+#define BUTTON_PIN_RIGHT (9)
+#define BUTTON_PIN_EMERGENCY (13)
+
+#define flasherPinOff (LOW)
+#define flasherPinOn (HIGH)
+
+volatile bool buttonBoolLeft = false;
+volatile bool buttonBoolRight = false;
+volatile bool buttonBoolEmergency = false;
 volatile bool sensorBool1 = false;
 volatile bool sensorBool2 = false;
 volatile bool sensorBool3 = false;
 volatile bool variableOwnershipFlag = false;
+long turnSignalDebounceTime = 250;   //in millis
+volatile unsigned long turnSignalDebouncePreviousMicrosLeft;
+volatile unsigned long turnSignalDebouncePreviousMicrosRight;
+volatile unsigned long emergencySignalDebouncePreviousMicros;
 float rotationTime = 0;
 float revsPerMin = 0;
 float finalSpeedKph = 0;
 float distanceTraveled = 0;
-unsigned long currentMicros = 0;
-unsigned long previousMicros = 0;
-int rpmRotationAngleCurrent = 0;
-int rpmRotationAngleOld = 359;
-int rpmIndDotCurrentX = 0;
-int rpmIndDotCurrentY = 0;
-int rpmIndDotOldX = 0;
-int rpmIndDotOldY = 0;
-int speedDigitSpacerCurrent = 105;
-int speedDigitSpacerOld = 105;
-int displayRpmCurrent = 0;
-int displayRpmOld = 0;
-int displaySpeedKphCurrent = 0;
-int displaySpeedKphOld = 0;
-int displayDistanceKmCurrent = 0;
-int displayDistanceKmOld = 0;
-int rotationCount = 0;
+volatile unsigned long currentMicros = 0;
+volatile unsigned long previousMicros = 0;
+volatile int rpmRotationAngleCurrent = 0;
+volatile int rpmRotationAngleOld = 359;
+volatile int rpmIndDotCurrentX = 0;
+volatile int rpmIndDotCurrentY = 0;
+volatile int rpmIndDotOldX = 0;
+volatile int rpmIndDotOldY = 0;
+volatile int speedDigitSpacerCurrent = 105;
+volatile int speedDigitSpacerOld = 105;
+volatile int displayRpmCurrent = 0;
+volatile int displayRpmOld = 0;
+volatile int displaySpeedKphCurrent = 0;
+volatile int displaySpeedKphOld = 99;
+volatile float displayDistanceKmCurrent = 0;
+volatile int displayDistanceKmOld = 99;
+volatile int rotationCount = 0;
+volatile int flasherPinCountNew = 0;
+volatile int flasherPinCountOld = 0;
+const uint8_t flasherPinsLeft[]PROGMEM = {18, 19, 20, 21};
+const uint8_t flasherPinsRight[]PROGMEM = {22, 26, 27, 28};
+
+//------- first timer stuff --------
+volatile unsigned long turnSignalTimerCurrentMillis;
+const unsigned long turnSignalTimerOnTime = 100;
+const unsigned long turnSignalTimerOffTime = 100;
+volatile unsigned long turnSignalTimerPrevioustMillis = 0;
+unsigned long turnSignalTimerInterval = turnSignalTimerOnTime;
+volatile boolean turnSignalTimerTriggerState = true;
+//------- end first timer stuff --------
+
+//------- version stuff --------
+const String p_project = "default";
+const uint8_t version_hi = 0;
+const uint8_t version_lo = 1;
+void versionPrint(void) {
+  debug("RicksWorx: ");
+  debugln(p_project);
+  debug("Version: ");
+  debug(version_hi);
+  debug(".");
+  debugln(version_lo);
+}
+//------- end version stuff --------
 
 Adafruit_GC9A01A tft(TFT_CS, TFT_DC, TFT_DIN, TFT_CLK, TFT_RST, TFT_DOUT);
 
 void setup() {
   delay(2000);
   Serial.begin(115200);
-  pinMode(FLAG_PIN_FILE_LOCK_IN, INPUT);
+  debugln("Serial started");
+  versionPrint();
+  pinMode(LED_BUILTIN, OUTPUT);
   attachInterrupt(digitalPinToInterrupt(FLAG_PIN_FILE_LOCK_IN), triggerFlagBusy, RISING);
   attachInterrupt(digitalPinToInterrupt(FLAG_PIN_FILE_UNLOCK_IN), triggerFlagIdle, RISING);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN_LEFT), triggerButtonLeft, RISING);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN_RIGHT), triggerButtonRight, RISING);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN_EMERGENCY), triggerButtonEmergency, RISING);
+  for (uint8_t i = 0; i < 4; i++) {
+    pinMode(flasherPinsLeft[i], OUTPUT);
+    pinMode(flasherPinsRight[i], OUTPUT);
+  }
   setupTft();
 }
 
 void setup1() {
   delay(2000);
-  pinMode(SENSOR_PIN1, INPUT);
-  pinMode(SENSOR_PIN2, INPUT);
-  pinMode(SENSOR_PIN3, INPUT);
   pinMode(FLAG_PIN_FILE_LOCK_OUT, OUTPUT);
   pinMode(FLAG_PIN_FILE_UNLOCK_OUT, OUTPUT);
   attachInterrupt(digitalPinToInterrupt(SENSOR_PIN1), triggerSensor1, RISING);
@@ -106,11 +162,92 @@ void setup1() {
 
 void loop() {
   updateVariables();
+  checkTurnSignalTimer();
   renderTft();
 }
 
 void loop1() {
   checkSensors();
+}
+
+void checkTurnSignalTimer() {
+  if (buttonBoolLeft || buttonBoolRight || buttonBoolEmergency) {
+    turnSignalTimerCurrentMillis = millis();
+    if ((unsigned long)(turnSignalTimerCurrentMillis - turnSignalTimerPrevioustMillis) >= turnSignalTimerInterval) {
+      if (turnSignalTimerTriggerState) {
+        turnSignalTimerInterval = turnSignalTimerOffTime;
+        if (buttonBoolLeft) {
+          digitalWrite(flasherPinsLeft[flasherPinCountNew], flasherPinOff);
+        }
+        if (buttonBoolRight) {
+          digitalWrite(flasherPinsRight[flasherPinCountNew], flasherPinOff);
+        }
+        if (buttonBoolEmergency) {
+          digitalWrite(flasherPinsRight[flasherPinCountNew], flasherPinOff);
+          digitalWrite(flasherPinsLeft[flasherPinCountNew], flasherPinOff);
+        }
+      } else {
+        turnSignalTimerInterval = turnSignalTimerOnTime;
+        if (buttonBoolLeft) {
+          digitalWrite(flasherPinsLeft[flasherPinCountOld], flasherPinOff);
+          digitalWrite(flasherPinsLeft[flasherPinCountNew], flasherPinOn);
+        }
+        if (buttonBoolRight) {
+          digitalWrite(flasherPinsRight[flasherPinCountOld], flasherPinOff);
+          digitalWrite(flasherPinsRight[flasherPinCountNew], flasherPinOn);
+        }
+        if (buttonBoolEmergency) {
+          digitalWrite(flasherPinsRight[flasherPinCountOld], flasherPinOff);
+          digitalWrite(flasherPinsLeft[flasherPinCountOld], flasherPinOff);
+          digitalWrite(flasherPinsRight[flasherPinCountNew], flasherPinOn);
+          digitalWrite(flasherPinsLeft[flasherPinCountNew], flasherPinOn);
+        }
+        flasherPinCountOld = flasherPinCountNew;
+        flasherPinCountNew++;
+        if (flasherPinCountNew > 4) {
+          flasherPinCountNew = 0;
+        }
+      }
+      turnSignalTimerTriggerState = !turnSignalTimerTriggerState;
+      turnSignalTimerPrevioustMillis = turnSignalTimerCurrentMillis;
+    }
+  } else {
+    buttonBoolLeft = false;
+    buttonBoolRight = false;
+    buttonBoolEmergency = false;
+    for (uint8_t i = 0; i < 4; i++) {
+      digitalWrite(flasherPinsLeft[i], flasherPinOff);
+      digitalWrite(flasherPinsRight[i], flasherPinOff);
+    }
+    flasherPinCountNew = 0;
+  }
+}
+
+void triggerButtonLeft() {
+  if ((long)(micros() - turnSignalDebouncePreviousMicrosLeft) >= turnSignalDebounceTime * 1000) {
+    buttonBoolLeft = !buttonBoolLeft;
+    buttonBoolRight = false;
+    buttonBoolEmergency = false;
+    turnSignalDebouncePreviousMicrosLeft = micros();
+  }
+}
+
+void triggerButtonRight() {
+  if ((long)(micros() - turnSignalDebouncePreviousMicrosRight) >= turnSignalDebounceTime * 1000) {
+    buttonBoolRight = !buttonBoolRight;
+    buttonBoolLeft = false;
+    buttonBoolEmergency = false;
+    turnSignalDebouncePreviousMicrosRight = micros();
+  }
+}
+
+void triggerButtonEmergency() {
+  if ((long)(micros() - emergencySignalDebouncePreviousMicros) >= turnSignalDebounceTime * 1000) {
+    buttonBoolEmergency = !buttonBoolEmergency;
+    buttonBoolRight = false;
+    buttonBoolLeft = false;
+    emergencySignalDebouncePreviousMicros = micros();
+  }
 }
 
 void triggerSensor1() {
@@ -226,7 +363,7 @@ void setupTft() {
   tft.println("KPH");
   tft.setTextSize(1);
   tft.setTextColor(GC9A01A_RED);
-  tft.setCursor(95, 150);
+  tft.setCursor(95, 175);
   tft.println("RPM x 100");
   //tft.drawRect(120, 120, 130, 150, GC9A01A_RED);
   //tft.drawRect(120, 120, 130, 150, GC9A01A_RED);
@@ -237,23 +374,24 @@ void updateVariables() {
     displayRpmCurrent = revsPerMin;
     displaySpeedKphCurrent = finalSpeedKph;
     displayDistanceKmCurrent = distanceTraveled;
-    Serial.println("rpm: " + (String)displayRpmCurrent);
-    Serial.println("speed: " + (String)displaySpeedKphCurrent);
-    Serial.println("distance: " + (String)displayDistanceKmCurrent);
+    rpmRotationAngleCurrent = displayRpmCurrent;
+    debugln("rpm: " + (String)displayRpmCurrent);
+    debugln("speed: " + (String)displaySpeedKphCurrent);
+    debugln("distance: " + (String)displayDistanceKmCurrent);
   }
 }
 
 void renderTft() {
-  if (displayDistanceKmCurrent >= 999) {
-    displayDistanceKmCurrent = 0;
+  if (displaySpeedKphCurrent >= 999) {
+    displaySpeedKphCurrent = 0;
   }
-  if (displayDistanceKmCurrent != displayDistanceKmOld) {
+  if (displaySpeedKphCurrent != displaySpeedKphOld) {
     tft.setTextSize(6);
-    if (displayDistanceKmCurrent >= 0 && displayDistanceKmCurrent <= 9) {
+    if (displaySpeedKphCurrent >= 0 && displaySpeedKphCurrent <= 9) {
       speedDigitSpacerCurrent = 105;
-    } else if (displayDistanceKmCurrent >= 9 && displayDistanceKmCurrent <= 99) {
+    } else if (displaySpeedKphCurrent >= 9 && displaySpeedKphCurrent <= 99) {
       speedDigitSpacerCurrent = 85;
-    } else if (displayDistanceKmCurrent >= 99 && displayDistanceKmCurrent <= 999) {
+    } else if (displaySpeedKphCurrent >= 99 && displaySpeedKphCurrent <= 999) {
       speedDigitSpacerCurrent = 70;
     }
     tft.setTextColor(GC9A01A_BLACK);
@@ -263,16 +401,26 @@ void renderTft() {
     tft.setCursor(speedDigitSpacerCurrent, 100);
     tft.println(displaySpeedKphCurrent);
   }
-  speedDigitSpacerOld = speedDigitSpacerCurrent;
-  displaySpeedKphOld = displaySpeedKphCurrent;
   rpmIndDotCurrentY = 120 + 80 * (-cos(rpmRotationAngleCurrent * pi / 180));
   rpmIndDotCurrentX = 120 + 80 * (sin(rpmRotationAngleCurrent * pi / 180));
-  //if (rpmRotationAngleCurrent != rpmRotationAngleOld) {
-  tft.drawCircle(rpmIndDotOldX, rpmIndDotOldY, 12, GC9A01A_BLACK);
-  tft.drawCircle(rpmIndDotCurrentX, rpmIndDotCurrentY, 12, GC9A01A_RED);
-  //}
+  if (rpmRotationAngleCurrent != rpmRotationAngleOld) {
+    tft.drawCircle(rpmIndDotOldX, rpmIndDotOldY, 12, GC9A01A_BLACK);
+    tft.drawCircle(rpmIndDotCurrentX, rpmIndDotCurrentY, 12, GC9A01A_RED);
+  }
+  if (displayDistanceKmCurrent != displayDistanceKmOld) {
+    tft.setTextSize(2);
+    tft.setTextColor(GC9A01A_BLACK + (String)" km");
+    tft.setCursor(85, 150);
+    tft.println(displayDistanceKmOld);
+    tft.setTextColor(GC9A01A_MAGENTA);
+    tft.setCursor(85, 150);
+    tft.println(displayDistanceKmCurrent + (String)" km");
+  }
   rpmIndDotOldX = rpmIndDotCurrentX;
   rpmIndDotOldY = rpmIndDotCurrentY;
+  speedDigitSpacerOld = speedDigitSpacerCurrent;
+  displaySpeedKphOld = displaySpeedKphCurrent;
+  displayDistanceKmOld = displayDistanceKmCurrent;
   rpmRotationAngleOld = rpmRotationAngleCurrent;
   if (rpmRotationAngleCurrent >= 360) {
     rpmRotationAngleCurrent = 0;
