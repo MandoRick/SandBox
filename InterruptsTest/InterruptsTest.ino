@@ -409,9 +409,9 @@ void renderTft() {
   }
   if (displayDistanceKmCurrent != displayDistanceKmOld) {
     tft.setTextSize(2);
-    tft.setTextColor(GC9A01A_BLACK + (String)" km");
+    tft.setTextColor(GC9A01A_BLACK);
     tft.setCursor(85, 150);
-    tft.println(displayDistanceKmOld);
+    tft.println(displayDistanceKmOld + (String)" km");
     tft.setTextColor(GC9A01A_MAGENTA);
     tft.setCursor(85, 150);
     tft.println(displayDistanceKmCurrent + (String)" km");
