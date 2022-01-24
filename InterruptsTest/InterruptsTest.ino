@@ -101,7 +101,7 @@ volatile int displayRpmOld = 0;
 volatile int displaySpeedKphCurrent = 0;
 volatile int displaySpeedKphOld = 99;
 volatile float displayDistanceKmCurrent = 0;
-volatile int displayDistanceKmOld = 99;
+volatile float displayDistanceKmOld = 99;
 volatile int rotationCount = 0;
 volatile int flasherPinCountNew = 0;
 volatile int flasherPinCountOld = 0;
@@ -365,6 +365,10 @@ void setupTft() {
   tft.setTextColor(GC9A01A_RED);
   tft.setCursor(95, 175);
   tft.println("RPM x 100");
+  tft.setTextSize(2);
+  tft.setTextColor(GC9A01A_MAGENTA);
+  tft.setCursor(85, 150);
+  tft.println("km:");
   //tft.drawRect(120, 120, 130, 150, GC9A01A_RED);
   //tft.drawRect(120, 120, 130, 150, GC9A01A_RED);
 }
@@ -410,11 +414,11 @@ void renderTft() {
   if (displayDistanceKmCurrent != displayDistanceKmOld) {
     tft.setTextSize(2);
     tft.setTextColor(GC9A01A_BLACK);
-    tft.setCursor(85, 150);
-    tft.println(displayDistanceKmOld + (String)" km");
+    tft.setCursor(115, 150);
+    tft.println(displayDistanceKmOld);
     tft.setTextColor(GC9A01A_MAGENTA);
-    tft.setCursor(85, 150);
-    tft.println(displayDistanceKmCurrent + (String)" km");
+    tft.setCursor(115, 150);
+    tft.println(displayDistanceKmCurrent);
   }
   rpmIndDotOldX = rpmIndDotCurrentX;
   rpmIndDotOldY = rpmIndDotCurrentY;
