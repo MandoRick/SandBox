@@ -103,8 +103,7 @@ volatile int displaySpeedKphOld = 99;
 volatile float displayDistanceKmCurrent = 0;
 volatile float displayDistanceKmOld = 99;
 volatile int rotationCount = 0;
-volatile int flasherPinCountNew = 0;
-volatile int flasherPinCountOld = 0;
+volatile int flasherPinCount = 0;
 const uint8_t flasherPinsLeft[]PROGMEM = {18, 19, 20, 21};
 const uint8_t flasherPinsRight[]PROGMEM = {28, 27, 26, 22};
 
@@ -143,7 +142,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(BUTTON_PIN_LEFT), triggerButtonLeft, RISING);
   attachInterrupt(digitalPinToInterrupt(BUTTON_PIN_RIGHT), triggerButtonRight, RISING);
   attachInterrupt(digitalPinToInterrupt(BUTTON_PIN_EMERGENCY), triggerButtonEmergency, RISING);
-  for (uint8_t i = 0; i <= 3; i++) {
+  for (int i = 0; i <= 3; i++) {
     pinMode(flasherPinsLeft[i], OUTPUT);
     pinMode(flasherPinsRight[i], OUTPUT);
   }
@@ -175,30 +174,22 @@ void checkTurnSignalTimer() {
     if ((unsigned long)(turnSignalTimerCurrentMillis - turnSignalTimerPrevioustMillis) >= turnSignalTimerInterval) {
       if (turnSignalTimerTriggerState) {
         turnSignalTimerInterval = turnSignalTimerOffTime;
-        for (uint8_t i = 0; i <= 4; i++) {
-          digitalWrite(flasherPinsLeft[i], flasherPinOff);
-          digitalWrite(flasherPinsRight[i], flasherPinOff);
-        }
       } else {
         turnSignalTimerInterval = turnSignalTimerOnTime;
         if (buttonBoolLeft) {
-          digitalWrite(flasherPinsLeft[flasherPinCountOld], flasherPinOff);
-          digitalWrite(flasherPinsLeft[flasherPinCountNew], flasherPinOn);
+          digitalWrite(flasherPinsLeft[flasherPinCount], flasherPinOn);
         }
         if (buttonBoolRight) {
-          digitalWrite(flasherPinsRight[flasherPinCountOld], flasherPinOff);
-          digitalWrite(flasherPinsRight[flasherPinCountNew], flasherPinOn);
+          digitalWrite(flasherPinsRight[flasherPinCount], flasherPinOn);
         }
         if (buttonBoolEmergency) {
-          digitalWrite(flasherPinsRight[flasherPinCountOld], flasherPinOff);
-          digitalWrite(flasherPinsLeft[flasherPinCountOld], flasherPinOff);
-          digitalWrite(flasherPinsRight[flasherPinCountNew], flasherPinOn);
-          digitalWrite(flasherPinsLeft[flasherPinCountNew], flasherPinOn);
+          digitalWrite(flasherPinsRight[flasherPinCount], flasherPinOn);
+          digitalWrite(flasherPinsLeft[flasherPinCount], flasherPinOn);
         }
-        flasherPinCountOld = flasherPinCountNew;
-        flasherPinCountNew++;
-        if (flasherPinCountNew >= 4) {
-          flasherPinCountNew = 0;
+        flasherPinCount++;
+        if (flasherPinCount >= 5) {
+          flasherPinCount = 0;
+          ledsOff();
         }
       }
       turnSignalTimerTriggerState = !turnSignalTimerTriggerState;
@@ -208,11 +199,8 @@ void checkTurnSignalTimer() {
     buttonBoolLeft = false;
     buttonBoolRight = false;
     buttonBoolEmergency = false;
-    for (uint8_t i = 0; i <= 4; i++) {
-      digitalWrite(flasherPinsLeft[i], flasherPinOff);
-      digitalWrite(flasherPinsRight[i], flasherPinOff);
-    }
-    flasherPinCountNew = 0;
+    ledsOff();
+    flasherPinCount = 0;
   }
 }
 
@@ -221,6 +209,7 @@ void triggerButtonLeft() {
     buttonBoolLeft = !buttonBoolLeft;
     buttonBoolRight = false;
     buttonBoolEmergency = false;
+    ledsOff();
     turnSignalDebouncePreviousMicrosLeft = micros();
   }
 }
@@ -230,6 +219,7 @@ void triggerButtonRight() {
     buttonBoolRight = !buttonBoolRight;
     buttonBoolLeft = false;
     buttonBoolEmergency = false;
+    ledsOff();
     turnSignalDebouncePreviousMicrosRight = micros();
   }
 }
@@ -239,6 +229,7 @@ void triggerButtonEmergency() {
     buttonBoolEmergency = !buttonBoolEmergency;
     buttonBoolRight = false;
     buttonBoolLeft = false;
+    ledsOff();
     emergencySignalDebouncePreviousMicros = micros();
   }
 }
@@ -269,6 +260,13 @@ void checkSensors() {
     sensorBool2 = false;
     sensorBool3 = false;
     countRotation();
+  }
+}
+
+void ledsOff() {
+  for (int i = 0; i <= 3; i++) {
+    digitalWrite(flasherPinsLeft[i], flasherPinOff);
+    digitalWrite(flasherPinsRight[i], flasherPinOff);
   }
 }
 
