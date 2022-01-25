@@ -106,7 +106,7 @@ volatile int rotationCount = 0;
 volatile int flasherPinCountNew = 0;
 volatile int flasherPinCountOld = 0;
 const uint8_t flasherPinsLeft[]PROGMEM = {18, 19, 20, 21};
-const uint8_t flasherPinsRight[]PROGMEM = {22, 26, 27, 28};
+const uint8_t flasherPinsRight[]PROGMEM = {28, 27, 26, 22};
 
 //------- first timer stuff --------
 volatile unsigned long turnSignalTimerCurrentMillis;
@@ -143,7 +143,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(BUTTON_PIN_LEFT), triggerButtonLeft, RISING);
   attachInterrupt(digitalPinToInterrupt(BUTTON_PIN_RIGHT), triggerButtonRight, RISING);
   attachInterrupt(digitalPinToInterrupt(BUTTON_PIN_EMERGENCY), triggerButtonEmergency, RISING);
-  for (uint8_t i = 0; i < 4; i++) {
+  for (uint8_t i = 0; i <= 3; i++) {
     pinMode(flasherPinsLeft[i], OUTPUT);
     pinMode(flasherPinsRight[i], OUTPUT);
   }
@@ -175,15 +175,9 @@ void checkTurnSignalTimer() {
     if ((unsigned long)(turnSignalTimerCurrentMillis - turnSignalTimerPrevioustMillis) >= turnSignalTimerInterval) {
       if (turnSignalTimerTriggerState) {
         turnSignalTimerInterval = turnSignalTimerOffTime;
-        if (buttonBoolLeft) {
-          digitalWrite(flasherPinsLeft[flasherPinCountNew], flasherPinOff);
-        }
-        if (buttonBoolRight) {
-          digitalWrite(flasherPinsRight[flasherPinCountNew], flasherPinOff);
-        }
-        if (buttonBoolEmergency) {
-          digitalWrite(flasherPinsRight[flasherPinCountNew], flasherPinOff);
-          digitalWrite(flasherPinsLeft[flasherPinCountNew], flasherPinOff);
+        for (uint8_t i = 0; i <= 4; i++) {
+          digitalWrite(flasherPinsLeft[i], flasherPinOff);
+          digitalWrite(flasherPinsRight[i], flasherPinOff);
         }
       } else {
         turnSignalTimerInterval = turnSignalTimerOnTime;
@@ -203,7 +197,7 @@ void checkTurnSignalTimer() {
         }
         flasherPinCountOld = flasherPinCountNew;
         flasherPinCountNew++;
-        if (flasherPinCountNew > 4) {
+        if (flasherPinCountNew >= 4) {
           flasherPinCountNew = 0;
         }
       }
@@ -214,7 +208,7 @@ void checkTurnSignalTimer() {
     buttonBoolLeft = false;
     buttonBoolRight = false;
     buttonBoolEmergency = false;
-    for (uint8_t i = 0; i < 4; i++) {
+    for (uint8_t i = 0; i <= 4; i++) {
       digitalWrite(flasherPinsLeft[i], flasherPinOff);
       digitalWrite(flasherPinsRight[i], flasherPinOff);
     }
