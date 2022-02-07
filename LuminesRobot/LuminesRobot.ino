@@ -33,14 +33,6 @@
 #include <SPI.h>
 #include "notes.h"
 
-#define mydebug 1     // 1 ON 0 OFF
-#if mydebug == 1
-#define debugln(x) Serial1.println(x)
-#define debug(x) Serial1.print(x)
-#else
-#define debugln(x)
-#define debug(x)
-#endif
 #define ONBOARD_LED_PIN  LED_BUILTIN
 
 #define RGB_LED_RED (0)
@@ -78,20 +70,6 @@ void playNote(int frequency, int duration, bool hold = false, bool measure = tru
 }
 //--------------------------
 
-//------- version stuff --------
-const String p_project = "RicksRobot";
-const uint8_t version_hi = 0;
-const uint8_t version_lo = 1;
-void versionPrint(void) {
-  debug("RicksWorx: ");
-  debugln(p_project);
-  debug("Version: ");
-  debug(version_hi);
-  debug('.');
-  debugln(version_lo);
-}
-//------- end version stuff --------
-
 float duration_us, distance_cm;
 bool buttonState1 = HIGH;
 bool buttonState2 = HIGH;
@@ -99,7 +77,11 @@ bool buttonState3 = HIGH;
 bool buttonState4 = HIGH;
 bool robotState = false;
 bool obstacleDetected = false;
-bool tunrDirection = false;
+bool turnDirection = false;
+bool rainbowActive = false;
+bool danceActivation = false;
+bool forwardActivation = false;
+bool flipFlop = false;
 uint8_t eyeMoodCurrent = 1;
 uint8_t eyeMoodOld = 0;
 uint8_t mouthMoodCurrent = 1;
@@ -107,12 +89,11 @@ uint8_t mouthMoodOld = 0;
 uint8_t hornMoodCurrent = 1;
 uint8_t hornMoodOld = 0;
 uint8_t turnCount = 0;
-uint8_t robotMovementCurrent = 0;
+uint8_t robotMovementCurrent = 1;
 uint8_t robotMovementOld = 0;
 
 
 void setup() {
-  setupSerial();
   setupDisplay();
   setupMotors();
   setupButtons();
@@ -121,21 +102,13 @@ void setup() {
   testLeds();
   testBuzzer();
   setupBackground();
-  versionPrint();
-  debugln("Setup Complete!");
 }
 
-void setupSerial() {
-  Serial1.begin(115200);
-  debugln("Serial Setup!");
-  delay(250);
-}
 
 void setupDisplay() {
   tft.init(240, 320);
   tft.setRotation(0);
   tft.fillScreen(ST77XX_BLACK);
-  debugln("Display Setup!");
   delay(250);
 }
 
@@ -146,7 +119,6 @@ void setupMotors() {
   pinMode(MOTOR_CNTRL_PIN_4, OUTPUT);
   pinMode(MOTOR_ENABLE_PIN_1, OUTPUT);
   pinMode(MOTOR_ENABLE_PIN_2, OUTPUT);
-  debugln("Motors Setup!");
   delay(250);
 }
 
@@ -155,14 +127,12 @@ void setupButtons() {
   pinMode(BUTTON_PIN_2, INPUT_PULLUP);
   pinMode(BUTTON_PIN_3, INPUT_PULLUP);
   pinMode(BUTTON_PIN_4, INPUT_PULLUP);
-  debugln("Buttons Setup!");
   delay(250);
 }
 
 void setupUltrasonic() {
   pinMode(ULTRASONIC_TRIG_PIN, OUTPUT);
   pinMode(ULTRASONIC_ECHO_PIN, INPUT);
-  debugln("Ultrasonic Setup!");
   delay(250);
 }
 
@@ -171,45 +141,36 @@ void setupLeds() {
   pinMode(RGB_LED_RED, OUTPUT);
   pinMode(RGB_LED_GREEN, OUTPUT);
   pinMode(RGB_LED_BLUE, OUTPUT);
-  debugln("LEDs Setup!");
   delay(250);
 }
 
 void setupRandomPins() {
   randomSeed(analogRead(RANDOM_SEED_PIN));
-  debugln("Random Pins Setup!");
   delay(250);
 }
 
 void testLeds() {
-  debugln("Testing LEDs!");
   delay(250);
-  debugln("Testing onboard LED!");
   digitalWrite(ONBOARD_LED_PIN, HIGH);
   delay(2000);
   digitalWrite(ONBOARD_LED_PIN, LOW);
-  debugln("Testing RED LED!");
   digitalWrite(RGB_LED_RED, HIGH);
   delay(2000);
   digitalWrite(RGB_LED_RED, LOW);
-  debugln("Testing GREEN LED!");
   digitalWrite(RGB_LED_GREEN, HIGH);
   delay(2000);
   digitalWrite(RGB_LED_GREEN, LOW);
-  debugln("Testing BLUE LED!");
   digitalWrite(RGB_LED_BLUE, HIGH);
   delay(2000);
   digitalWrite(RGB_LED_BLUE, LOW);
 }
 
 void testBuzzer() {
-  debugln("Testing Buzzer!");
   playNote(200, SIXTEENTH, false);
   delay(250);
 }
 
 void setupBackground() {
-  debugln("Setting Up Background!");
   delay(250);
   tft.fillTriangle(20, 20, 40, 80, 90, 30, ST77XX_MAGENTA);
   tft.fillTriangle(220, 20, 200, 80, 150, 30, ST77XX_MAGENTA);
@@ -226,11 +187,11 @@ void setupBackground() {
 }
 
 void loop() {
-  pingDistance();
   checkButtons();
   lightHorn();
   renderDisplay();
   moveRobot();
+  checkRainbow();
 }
 
 void pingDistance() {
@@ -240,17 +201,19 @@ void pingDistance() {
   duration_us = pulseIn(ULTRASONIC_ECHO_PIN, HIGH);  // measure duration of pulse from ECHO pin
   distance_cm = 0.017 * duration_us;   // calculate the distance
   if (distance_cm > 2 && distance_cm < 50) {
-    obstacleDetected = true;
+    robotStop();
     mouthMoodCurrent = 4;
     hornMoodCurrent = 2;
+    hornRed();
+    robotSqueek();
+    delay(250);
+    robotTurn();
+    forwardActivation = true;
+    hornMagenta();
   } else {
-    obstacleDetected = false;
     mouthMoodCurrent = 1;
     hornMoodCurrent = 1;
   }
-  debug("distance: ");   // print the value to Serial Monitor
-  debug(distance_cm);
-  debugln(" cm");
 }
 
 void checkButtons() {
@@ -259,22 +222,27 @@ void checkButtons() {
   buttonState3 = digitalRead(BUTTON_PIN_3);
   buttonState4 = digitalRead(BUTTON_PIN_4);
   if (buttonState1 == LOW) {                  //Button 1 pressed, do a thing
-    debugln("button 1 pressed!");
-    robotState = true;
-    buttonState1 = HIGH;
+    robotMovementCurrent = 1;
+    rainbowActive = false;
+    forwardActivation = false;
   }
-  if (buttonState2 == LOW) {                  //Button 2 pressed, do a thing
-    debugln("button 2 pressed!");
-    robotState = false;
-    buttonState2 = HIGH;
+  if (buttonState2 == LOW) {                  //Button 3 pressed, do a thing
+    robotMovementCurrent = 2;
+    forwardActivation = false;
+    danceActivation = true;
   }
-  if (buttonState3 == LOW) {                  //Button 3 pressed, do a thing
-    debugln("button 3 pressed!");
-    buttonState3 = HIGH;
+  if (buttonState3 == LOW) {                  //Button 2 pressed, do a thing
+    robotMovementCurrent = 3;
+    forwardActivation = true;
+    danceActivation = false;
+    rainbowActive = false;
+    hornMagenta();
   }
   if (buttonState4 == LOW) {                  //Button 4 pressed, do a thing
-    debugln("button 4 pressed!");
-    buttonState4 = HIGH;
+    rainbowActive = true;
+    robotMovementCurrent = 4;
+    forwardActivation = false;
+    danceActivation = false;
   }
 }
 
@@ -343,26 +311,48 @@ void renderDisplay() {
 }
 
 void moveRobot() {
+  //mode 1 stops robot
   if (robotMovementCurrent != robotMovementOld) {
-    if (robotMovementCurrent == 0) {
+    if (robotMovementCurrent == 1) {
+      eyeMoodCurrent = 1;
       robotStop();
+      rainbowActive = true;
+      robotMovementOld = robotMovementCurrent;
+    } else if (robotMovementCurrent == 4) {
+      rainbowActive = false;
     }
-    else if (robotMovementCurrent == 1) {
-      robotDriveForward();
-    }
-    else if (robotMovementCurrent == 2) {
-      robotDriveBackward();
-    }
-    else if (robotMovementCurrent == 3) {
-      robotTurnLeft();
-      turnCount = turnCount + 1;
-    }
-    else if (robotMovementCurrent == 4) {
-      robotTurnRight();
-      turnCount = turnCount + 1;
-    }
-    robotMovementOld = robotMovementCurrent;
   }
+  if (robotMovementCurrent == 2) {
+    eyeMoodCurrent = 1;
+    robotDriveForward();
+  } else if (robotMovementCurrent == 3) {
+    robotDance();
+  }
+}
+
+void checkRainbow() {
+  if (rainbowActive == true) {
+    hornMoodCurrent = hornMoodCurrent + 1;
+    if (hornMoodCurrent > 7) {
+      hornMoodCurrent = 2;
+    }
+  }
+}
+
+void robotStop() {
+  digitalWrite(MOTOR_ENABLE_PIN_1, LOW);
+  digitalWrite(MOTOR_ENABLE_PIN_2, LOW);
+}
+
+void robotTurn() {
+  if (turnDirection == true) {
+    eyeMoodCurrent = 2;
+    robotTurnLeft();
+  } else {
+    eyeMoodCurrent = 3;
+    robotTurnRight();
+  }
+  turnCount = turnCount + 1;
   if (turnCount > 4) {
     turnDirection = !turnDirection;
     turnCount = 0;
@@ -378,6 +368,9 @@ void robotTurnLeft() {
   digitalWrite(MOTOR_CNTRL_PIN_4, HIGH);
   digitalWrite(MOTOR_ENABLE_PIN_1, HIGH);
   digitalWrite(MOTOR_ENABLE_PIN_2, HIGH);
+  delay(250);
+  digitalWrite(MOTOR_ENABLE_PIN_1, LOW);
+  digitalWrite(MOTOR_ENABLE_PIN_2, LOW);
 }
 
 void robotTurnRight() {
@@ -389,34 +382,36 @@ void robotTurnRight() {
   digitalWrite(MOTOR_CNTRL_PIN_4, LOW);
   digitalWrite(MOTOR_ENABLE_PIN_1, HIGH);
   digitalWrite(MOTOR_ENABLE_PIN_2, HIGH);
+  delay(250);
+  digitalWrite(MOTOR_ENABLE_PIN_1, LOW);
+  digitalWrite(MOTOR_ENABLE_PIN_2, LOW);
 }
 
 void robotDriveForward() {
-  digitalWrite(MOTOR_ENABLE_PIN_1, LOW);
-  digitalWrite(MOTOR_ENABLE_PIN_2, LOW);
-  digitalWrite(MOTOR_CNTRL_PIN_1, HIGH);
-  digitalWrite(MOTOR_CNTRL_PIN_2, LOW);
-  digitalWrite(MOTOR_CNTRL_PIN_3, LOW);
-  digitalWrite(MOTOR_CNTRL_PIN_4, HIGH);
-  digitalWrite(MOTOR_ENABLE_PIN_1, HIGH);
-  digitalWrite(MOTOR_ENABLE_PIN_2, HIGH);
+  pingDistance();
+  if (forwardActivation == true) {
+    forwardActivation = false;
+    digitalWrite(MOTOR_ENABLE_PIN_1, LOW);
+    digitalWrite(MOTOR_ENABLE_PIN_2, LOW);
+    digitalWrite(MOTOR_CNTRL_PIN_1, LOW);
+    digitalWrite(MOTOR_CNTRL_PIN_2, HIGH);
+    digitalWrite(MOTOR_CNTRL_PIN_3, HIGH);
+    digitalWrite(MOTOR_CNTRL_PIN_4, LOW);
+    digitalWrite(MOTOR_ENABLE_PIN_1, HIGH);
+    digitalWrite(MOTOR_ENABLE_PIN_2, HIGH);
+  }
 }
 
-
-void robotDriveBackward() {
-  digitalWrite(MOTOR_ENABLE_PIN_1, LOW);
-  digitalWrite(MOTOR_ENABLE_PIN_2, LOW);
-  digitalWrite(MOTOR_CNTRL_PIN_1, LOW);
-  digitalWrite(MOTOR_CNTRL_PIN_2, HIGH);
-  digitalWrite(MOTOR_CNTRL_PIN_3, HIGH);
-  digitalWrite(MOTOR_CNTRL_PIN_4, LOW);
-  digitalWrite(MOTOR_ENABLE_PIN_1, HIGH);
-  digitalWrite(MOTOR_ENABLE_PIN_2, HIGH);
-}
-
-void robotStop() {
-  digitalWrite(MOTOR_ENABLE_PIN_1, LOW);
-  digitalWrite(MOTOR_ENABLE_PIN_2, LOW);
+void robotDance() {
+  robotSpeak();
+  if (flipFlop == true) {
+    eyeMoodCurrent = 1;
+    robotTurnLeft();
+  } else {
+    eyeMoodCurrent = 2;
+    robotTurnRight();
+  }
+  flipFlop = !flipFlop;
 }
 
 void robotSpeak() {
@@ -425,6 +420,11 @@ void robotSpeak() {
   playNote(random(100, 4000), SIXTEENTH, false);
   playNote(random(100, 4000), SIXTEENTH, false);
   playNote(random(100, 4000), SIXTEENTH, false);
+}
+
+void robotSqueek() {
+  playNote(1000, SIXTEENTH, false);
+  playNote(250, SIXTEENTH, false);
 }
 
 void renderEraseEyes() {
@@ -482,6 +482,7 @@ void hornOff() {
 }
 
 void hornRed() {
+  hornOff();
   digitalWrite(RGB_LED_RED, LOW);
   digitalWrite(RGB_LED_GREEN, LOW);
   digitalWrite(RGB_LED_BLUE, LOW);
@@ -489,6 +490,7 @@ void hornRed() {
 }
 
 void hornGreen() {
+  hornOff();
   digitalWrite(RGB_LED_RED, LOW);
   digitalWrite(RGB_LED_GREEN, LOW);
   digitalWrite(RGB_LED_BLUE, LOW);
@@ -496,6 +498,7 @@ void hornGreen() {
 }
 
 void hornBlue() {
+  hornOff();
   digitalWrite(RGB_LED_RED, LOW);
   digitalWrite(RGB_LED_GREEN, LOW);
   digitalWrite(RGB_LED_BLUE, LOW);
@@ -503,6 +506,7 @@ void hornBlue() {
 }
 
 void hornCyan() {
+  hornOff();
   digitalWrite(RGB_LED_RED, LOW);
   digitalWrite(RGB_LED_GREEN, LOW);
   digitalWrite(RGB_LED_BLUE, LOW);
@@ -511,6 +515,7 @@ void hornCyan() {
 }
 
 void hornMagenta() {
+  hornOff();
   digitalWrite(RGB_LED_RED, LOW);
   digitalWrite(RGB_LED_GREEN, LOW);
   digitalWrite(RGB_LED_BLUE, LOW);
@@ -519,6 +524,7 @@ void hornMagenta() {
 }
 
 void hornYellow() {
+  hornOff();
   digitalWrite(RGB_LED_RED, LOW);
   digitalWrite(RGB_LED_GREEN, LOW);
   digitalWrite(RGB_LED_BLUE, LOW);
