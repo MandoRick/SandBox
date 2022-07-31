@@ -27,118 +27,97 @@
   -------------by-jediRick--------------------
 */
 
-
 #include <Wire.h>  //i2c
 #include <GyverOLED.h> //display
+#include <Arduino_LSM6DSOX.h> //imu
 #include <Adafruit_GPS.h> //gps
-#include <Arduino_LSM6DSOX.h> //IMU
 
 #define serialGps Serial1
 #define serialMonitor Serial
-#define GPSECHO (true)
-#define displayRefreshDelay (1110)
+#define GPSECHO (false)
 #define gpsRefreshDelay (2000)
 
+int temperature_deg;
+int16_t gpsHour, gpsMin, gpsSec, gpsDay, gpsMon, gpsYear, gpsFix, gpsQual, gpsSat , gpsAntenna, gpsLat, gpsLon, gpsSpeed, gpsAltitude, gpsAngle;
+float gpsLatitude, gpsLongitude, ax, ay, az, gx, gy, gz;
+uint32_t timer1 = millis();
 
 Adafruit_GPS GPS(&serialGps);
 GyverOLED<SSH1106_128x64> oled;
 
-int32_t gpsHour, gpsMin, gpsSec, gpsDay, gpsMon, gpsYear, gpsFix, gpsQual, gpsLatitude, gpsLat, gpsLongitude, gpsLon, gpsSpeed, gpsAngle, gpsAltitude, gpsSat , gpsAntenna;
-uint32_t timer1, timer2 = millis();
-int imuTemp;
-float imuAccX, imuAccY, imuAccZ, imuGyroX, imuGyroY, imuGyroZ;
-volatile bool flag1 = true;
-volatile bool flag2 = false;
-
-//--------------------------------          core 1          ---------------------------------
-
 void setup() {
-  setupOled();
-}
-
-void loop() {
-  if (flag1) {
-    flag2 = true;
-    updateOled();
-    flag2 - false;
-  }
-}
-
-void setupOled() {
+  serialMonitor.begin(115200);
+  delay(2000);
   oled.init();  // инициализация
-}
-
-void updateOled() {
-  if (millis() - timer2 > displayRefreshDelay) {
-    timer2 = millis(); // reset the timer
-    oled.clear();
-    oled.setScale(1);
-    oled.home();  // home 0,0
-    oled.print(gpsHour); oled.print(" ");
-    oled.print(gpsMin); oled.print(" ");
-    oled.print(gpsSec); oled.print(" ");
-    oled.print(gpsDay); oled.print(" ");
-    oled.print(gpsMon); oled.print(" ");
-    oled.print(gpsYear); oled.println(" ");
-    oled.print(gpsFix); oled.print(" ");
-    oled.print(gpsQual); oled.println(" ");
-    oled.print(gpsLatitude); oled.print(" ");
-    oled.print(gpsLat); oled.println(" ");
-    oled.print(gpsLongitude); oled.print(" ");
-    oled.print(gpsLon); oled.println(" ");
-    oled.print(gpsSpeed); oled.print(" ");
-    oled.print(gpsAngle); oled.print(" ");
-    oled.print(gpsAltitude); oled.println(" ");
-    oled.print(gpsSat); oled.print(" ");
-    oled.print(gpsAntenna); oled.print(" ");
-    oled.print(imuTemp); oled.println(" ");
-    oled.print(imuAccX); oled.print(" ");
-    oled.print(imuAccY); oled.print(" ");
-    oled.print(imuAccZ); oled.println(" ");
-    oled.print(imuGyroX); oled.print(" ");
-    oled.print(imuGyroY); oled.print(" ");
-    oled.print(imuGyroZ); oled.print(" ");
-    //oled.setCursor(5, 1);   // курсор в (пиксель X, строка Y)
-    //oled.setScale(2);
-    oled.update();
+  serialMonitor.println("Ricks Drone!");
+  //while (!serialMonitor);
+  if (!IMU.begin()) {
+    serialMonitor.println("Failed to initialize IMU!");
+    while (1);
   }
-}
-
-
-//--------------------------------          core 1          ---------------------------------
-
-void setup1() {
+  delay(500);
+  
   setupGps();
 }
 
-void loop1() {
-  if (flag2) {
-    flag1 = true;
-    updateGps();
-    flag1 = false;
-  }
+void loop() {
+  updateImu();
+  updateGps();
 }
 
 void setupGps() {
-  serialMonitor.begin(115200);
-  serialMonitor.println("Adafruit GPS library basic parsing test!");
+  // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
   GPS.begin(9600);
-  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
-  GPS.sendCommand(PGCMD_ANTENNA);
-  serialGps.println(PMTK_Q_RELEASE);
+  // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
+  //GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+  // uncomment this line to turn on only the "minimum recommended" data
+  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);
+  // For parsing data, we don't suggest using anything but either RMC only or RMC+GGA since
+  // the parser doesn't care about other sentences at this time
+  // Set the update rate
+  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_5HZ); // 1 Hz update rate
+  // For the parsing code to work nicely and have time to sort thru the data, and
+  // print it out we don't suggest using anything higher than 1 Hz
+
+  // Request updates on antenna status, comment out to keep quiet
+  //GPS.sendCommand(PGCMD_ANTENNA);
+
+  delay(1000);
+
+  // Ask for firmware version
+  //GPSSerial.println(PMTK_Q_RELEASE);
+}
+
+void updateImu() {
+  if (IMU.accelerationAvailable()) {
+    IMU.readAcceleration(ax, ay, az);
+  }
+  if (IMU.gyroscopeAvailable()) {
+    IMU.readGyroscope(gx, gy, gz);
+  }
+  if (IMU.temperatureAvailable()) {
+    IMU.readTemperature(temperature_deg);
+  }
 }
 
 void updateGps() {
+  // read data from the GPS in the 'main loop'
   char c = GPS.read();
+  // if you want to debug, this is a good time to do it!
   if (GPSECHO)
-    if (c) serialMonitor.print(c);
+    if (c) Serial.print(c);
+  // if a sentence is received, we can check the checksum, parse it...
   if (GPS.newNMEAreceived()) {
-    serialMonitor.print(GPS.lastNMEA());
-    if (!GPS.parse(GPS.lastNMEA()))
-      return;
+    // a tricky thing here is if we print the NMEA sentence, or data
+    // we end up not listening and catching other sentences!
+    // so be very wary if using OUTPUT_ALLDATA and trying to print out data
+    Serial.print(GPS.lastNMEA()); // this also sets the newNMEAreceived() flag to false
+    if (!GPS.parse(GPS.lastNMEA())) // this also sets the newNMEAreceived() flag to false
+      return; // we can fail to parse a sentence in which case we should just wait for another
   }
-  if (millis() - timer1 > gpsRefreshDelay) {
+
+  // approximately every 2 seconds or so, print out the current stats
+  if (millis() - timer1 > 2000) {
     timer1 = millis(); // reset the timer
     gpsHour = GPS.hour;
     gpsMin = GPS.minute;
@@ -157,54 +136,68 @@ void updateGps() {
     gpsAltitude = GPS.altitude;
     gpsSat = GPS.satellites;
     gpsAntenna = GPS.antenna;
-    updateImu();
-    serialMonitor.print("\nTime: ");
-    if (GPS.hour < 10) {
-      serialMonitor.print('0');
-    }
-    serialMonitor.print(GPS.hour, DEC); serialMonitor.print(':');
-    if (GPS.minute < 10) {
-      serialMonitor.print('0');
-    }
-    serialMonitor.print(GPS.minute, DEC); serialMonitor.print(':');
-    if (GPS.seconds < 10) {
-      serialMonitor.print('0');
-    }
-    serialMonitor.print(GPS.seconds, DEC); serialMonitor.print('.');
-    if (GPS.milliseconds < 10) {
-      serialMonitor.print("00");
-    } else if (GPS.milliseconds > 9 && GPS.milliseconds < 100) {
-      serialMonitor.print("0");
-    }
-    serialMonitor.println(GPS.milliseconds);
-    serialMonitor.print("Date: ");
-    serialMonitor.print(GPS.day, DEC); serialMonitor.print('/');
-    serialMonitor.print(GPS.month, DEC); serialMonitor.print("/20");
-    serialMonitor.println(GPS.year, DEC);
-    serialMonitor.print("Fix: "); serialMonitor.print((int)GPS.fix);
-    serialMonitor.print(" quality: "); serialMonitor.println((int)GPS.fixquality);
-    if (GPS.fix) {
-      serialMonitor.print("Location: ");
-      serialMonitor.print(GPS.latitude, 4); serialMonitor.print(GPS.lat);
-      serialMonitor.print(", ");
-      serialMonitor.print(GPS.longitude, 4); serialMonitor.println(GPS.lon);
-      serialMonitor.print("Speed (knots): "); serialMonitor.println(GPS.speed);
-      serialMonitor.print("Angle: "); serialMonitor.println(GPS.angle);
-      serialMonitor.print("Altitude: "); serialMonitor.println(GPS.altitude);
-      serialMonitor.print("Satellites: "); serialMonitor.println((int)GPS.satellites);
-      serialMonitor.print("Antenna status: "); serialMonitor.println((int)GPS.antenna);
-    }
+    updateOled();
+    //imuSerialPrint();
   }
 }
 
-void updateImu() {
-  if (IMU.accelerationAvailable()) {
-    IMU.readAcceleration(imuAccX, imuAccY, imuAccZ);
-  }
-  if (IMU.gyroscopeAvailable()) {
-    IMU.readGyroscope(imuGyroX, imuGyroY, imuGyroZ);
-  }
-  if (IMU.temperatureAvailable()) {
-    IMU.readTemperature(imuTemp);
-  }
+void imuSerialPrint() {
+  serialMonitor.println(" ");
+  serialMonitor.print(gpsHour); serialMonitor.print(" ");
+  serialMonitor.print(gpsMin); serialMonitor.print(" ");
+  serialMonitor.print(gpsSec); serialMonitor.print(" ");
+  serialMonitor.print(gpsDay); serialMonitor.print(" ");
+  serialMonitor.print(gpsMon); serialMonitor.print(" ");
+  serialMonitor.print(gpsYear); serialMonitor.println(" ");
+  serialMonitor.print(gpsFix); serialMonitor.print(" ");
+  serialMonitor.print(gpsQual); serialMonitor.println(" ");
+  serialMonitor.print(gpsLatitude); serialMonitor.print(" ");
+  serialMonitor.print(gpsLat); serialMonitor.println(" ");
+  serialMonitor.print(gpsLongitude); serialMonitor.print(" ");
+  serialMonitor.print(gpsLon); serialMonitor.println(" ");
+  serialMonitor.print(gpsSpeed); serialMonitor.print(" ");
+  serialMonitor.print(gpsAngle); serialMonitor.print(" ");
+  serialMonitor.print(gpsAltitude); serialMonitor.println(" ");
+  serialMonitor.print(gpsSat); serialMonitor.print(" ");
+  serialMonitor.print(gpsAntenna); serialMonitor.print(" ");
+  serialMonitor.print(temperature_deg); serialMonitor.println(" ");
+  serialMonitor.print(ax); serialMonitor.print(" ");
+  serialMonitor.print(ay); serialMonitor.print(" ");
+  serialMonitor.print(az); serialMonitor.println(" ");
+  serialMonitor.print(gx); serialMonitor.print(" ");
+  serialMonitor.print(gy); serialMonitor.print(" ");
+  serialMonitor.print(gz); serialMonitor.println(" ");
+}
+
+void updateOled() {
+  oled.clear();
+  oled.setScale(1);
+  oled.home();  // home 0,0
+  oled.print(gpsHour); oled.print(" ");
+  oled.print(gpsMin); oled.print(" ");
+  oled.print(gpsSec); oled.print(" ");
+  oled.print(gpsDay); oled.print(" ");
+  oled.print(gpsMon); oled.print(" ");
+  oled.print(gpsYear); oled.println(" ");
+  oled.print(gpsFix); oled.print(" ");
+  oled.print(gpsQual); oled.println(" ");
+  oled.print(gpsLatitude); oled.print(" ");
+  oled.print(gpsLat); oled.println(" ");
+  oled.print(gpsLongitude); oled.print(" ");
+  oled.print(gpsLon); oled.println(" ");
+  oled.print(gpsSpeed); oled.print(" ");
+  oled.print(gpsAngle); oled.print(" ");
+  oled.print(gpsAltitude); oled.println(" ");
+  oled.print(gpsSat); oled.print(" ");
+  oled.print(gpsAntenna); oled.print(" ");
+  oled.print(temperature_deg); oled.println(" ");
+  oled.print(ax); oled.print(" ");
+  oled.print(ay); oled.print(" ");
+  oled.print(az); oled.println(" ");
+  oled.print(gx); oled.print(" ");
+  oled.print(gy); oled.print(" ");
+  oled.print(gz); oled.print(" ");
+  //oled.setCursor(5, 1);   // курсор в (пиксель X, строка Y)
+  //oled.setScale(2);
+  oled.update();
 }
