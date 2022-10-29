@@ -28,183 +28,46 @@
 */
 
 #include <Arduino.h>
-#include <Adafruit_LSM6DSOX.h>    //IMU
-#include <Wire.h>                 //I2C
-#include <VL53L1X.h>              //TOF
-#include "ESC.h"                  //ESC
+#include <Adafruit_Sensor.h>
+#include <Adafruit_LIS2MDL.h>   //COMPASS
+#include <Adafruit_LSM6DSOX.h>  //IMU
+#include <Wire.h>               //I2C
+#include <VL53L1X.h>            //TOF
+#include "ESC.h"                //ESC
 
-#define myDebug 1     // 1 ON 0 OFF
-#if myDebug == 1
-#define debugln(x) Serial.println(x)
-#define debug(x) Serial.print(x)
-#else
-#define debugln(x)
-#define debug(x)
-#endif
-
-#include "ESC.h"
-#define LED_PIN (13)      // Pin for the LED 
 #define SPEED_MIN (1000)  // Set the Minimum Speed in microseconds
 #define SPEED_MAX (2000)  // Set the Minimum Speed in microseconds
-#define ESC_PIN1 (20)  //(D08 Yellow)
-#define ESC_PIN2 (21)  //(D09 White)
-#define ESC_PIN3 (5)   //(D10 Blue)
-#define ESC_PIN4 (7)   //(D11 Green)
-
+#define ESC_PIN1 (20)     //(D08 Yellow)
+#define ESC_PIN2 (21)     //(D09 White)
+#define ESC_PIN3 (5)      //(D10 Blue)
+#define ESC_PIN4 (7)      //(D11 Green)
+#define DATA_DIGITS (15)  //how many data digits
+#define DATA_AXIS (20)    //how many rows of noise buffer and prediction
+//  accX, accY, accZ, gyrX, gyrY, gyrZ, magHead, tof1, tof2, tof3, tof4, tof5, tof6, temp, misc
+int16_t DataIn[DATA_AXIS][DATA_DIGITS];
+int16_t DataOut[DATA_DIGITS];
+int16_t lineCount = 0;
 uint16_t oESC;
-float GyroX, GyroY, GyroZ, AccX, AccY, AccZ;
 
-// ESC_Name (ESC PIN, Minimum Value, Maximum Value, Default Speed, Arm Value)
-ESC ESC_1 (ESC_PIN1, SPEED_MIN, SPEED_MAX, 500);
-ESC ESC_2 (ESC_PIN2, SPEED_MIN, SPEED_MAX, 500);
-ESC ESC_3 (ESC_PIN3, SPEED_MIN, SPEED_MAX, 500);
-ESC ESC_4 (ESC_PIN4, SPEED_MIN, SPEED_MAX, 500);
-
+ESC ESC_1(ESC_PIN1, SPEED_MIN, SPEED_MAX, 500);
+ESC ESC_2(ESC_PIN2, SPEED_MIN, SPEED_MAX, 500);
+ESC ESC_3(ESC_PIN3, SPEED_MIN, SPEED_MAX, 500);
+ESC ESC_4(ESC_PIN4, SPEED_MIN, SPEED_MAX, 500);
 Adafruit_LSM6DSOX IMU_DSOX;
+Adafruit_LIS2MDL mag = Adafruit_LIS2MDL(12345);
 
 void setup() {
-  setupSerial();
-  setupI2C();
-  setupIMU();
-  setupESC();
-}
-
-void loop() {
-  updateESC();
-  updateIMU();
-}
-
-void setupSerial() {
   Serial.begin(115200);
-  while (!Serial) {
-    delay(10);
-  }
-  delay(5000);
-  debugln("SERIAL SETUP!");
-  delay(2000);
-}
-
-void setupIMU() {
-  debugln("Adafruit LSM6DSOX test!");
-  if (!IMU_DSOX.begin_I2C()) {
-    debugln("Failed to find LSM6DSOX chip");
-  }
-  debugln("LSM6DSOX Found!");
-  // IMU_DSOX.setAccelRange(LSM6DS_ACCEL_RANGE_2_G);
-  debug("Accelerometer range set to: ");
-  switch (IMU_DSOX.getAccelRange()) {
-    case LSM6DS_ACCEL_RANGE_2_G:
-      debugln("+-2G");
-      break;
-    case LSM6DS_ACCEL_RANGE_4_G:
-      debugln("+-4G");
-      break;
-    case LSM6DS_ACCEL_RANGE_8_G:
-      debugln("+-8G");
-      break;
-    case LSM6DS_ACCEL_RANGE_16_G:
-      debugln("+-16G");
-      break;
-  }
-  // IMU_DSOX.setGyroRange(LSM6DS_GYRO_RANGE_250_DPS );
-  debug("Gyro range set to: ");
-  switch (IMU_DSOX.getGyroRange()) {
-    case LSM6DS_GYRO_RANGE_125_DPS:
-      debugln("125 degrees/s");
-      break;
-    case LSM6DS_GYRO_RANGE_250_DPS:
-      debugln("250 degrees/s");
-      break;
-    case LSM6DS_GYRO_RANGE_500_DPS:
-      debugln("500 degrees/s");
-      break;
-    case LSM6DS_GYRO_RANGE_1000_DPS:
-      debugln("1000 degrees/s");
-      break;
-    case LSM6DS_GYRO_RANGE_2000_DPS:
-      debugln("2000 degrees/s");
-      break;
-    case ISM330DHCX_GYRO_RANGE_4000_DPS:
-      break; // unsupported range for the DSOX
-  }
-  // IMU_DSOX.setAccelDataRate(LSM6DS_RATE_12_5_HZ);
-  debug("Accelerometer data rate set to: ");
-  switch (IMU_DSOX.getAccelDataRate()) {
-    case LSM6DS_RATE_SHUTDOWN:
-      debugln("0 Hz");
-      break;
-    case LSM6DS_RATE_12_5_HZ:
-      debugln("12.5 Hz");
-      break;
-    case LSM6DS_RATE_26_HZ:
-      debugln("26 Hz");
-      break;
-    case LSM6DS_RATE_52_HZ:
-      debugln("52 Hz");
-      break;
-    case LSM6DS_RATE_104_HZ:
-      debugln("104 Hz");
-      break;
-    case LSM6DS_RATE_208_HZ:
-      debugln("208 Hz");
-      break;
-    case LSM6DS_RATE_416_HZ:
-      debugln("416 Hz");
-      break;
-    case LSM6DS_RATE_833_HZ:
-      debugln("833 Hz");
-      break;
-    case LSM6DS_RATE_1_66K_HZ:
-      debugln("1.66 KHz");
-      break;
-    case LSM6DS_RATE_3_33K_HZ:
-      debugln("3.33 KHz");
-      break;
-    case LSM6DS_RATE_6_66K_HZ:
-      debugln("6.66 KHz");
-      break;
-  }
-  // IMU_DSOX.setGyroDataRate(LSM6DS_RATE_12_5_HZ);
-  debug("Gyro data rate set to: ");
-  switch (IMU_DSOX.getGyroDataRate()) {
-    case LSM6DS_RATE_SHUTDOWN:
-      debugln("0 Hz");
-      break;
-    case LSM6DS_RATE_12_5_HZ:
-      debugln("12.5 Hz");
-      break;
-    case LSM6DS_RATE_26_HZ:
-      debugln("26 Hz");
-      break;
-    case LSM6DS_RATE_52_HZ:
-      debugln("52 Hz");
-      break;
-    case LSM6DS_RATE_104_HZ:
-      debugln("104 Hz");
-      break;
-    case LSM6DS_RATE_208_HZ:
-      debugln("208 Hz");
-      break;
-    case LSM6DS_RATE_416_HZ:
-      debugln("416 Hz");
-      break;
-    case LSM6DS_RATE_833_HZ:
-      debugln("833 Hz");
-      break;
-    case LSM6DS_RATE_1_66K_HZ:
-      debugln("1.66 KHz");
-      break;
-    case LSM6DS_RATE_3_33K_HZ:
-      debugln("3.33 KHz");
-      break;
-    case LSM6DS_RATE_6_66K_HZ:
-      debugln("6.66 KHz");
-      break;
-  }
+  setupI2C();
+  setupESC();
+  setupIMU();
+  setupCompass();
 }
 
 void setupI2C() {
   Wire.begin();
+  Serial.println("I2C Setup!");
+  delay(1000);
 }
 
 void setupESC() {
@@ -212,95 +75,188 @@ void setupESC() {
   ESC_2.arm();
   ESC_3.arm();
   ESC_4.arm();
+  delay(5000);
+  Serial.println("ESC Setup!");
   delay(1000);
 }
 
-void updateESC() {
-  ESC_1.speed(1030);
-  ESC_2.speed(1030);
-  ESC_3.speed(1030);
-  ESC_4.speed(1030);
-  //delay(5000);
-  ESC_1.speed(1000);
-  ESC_2.speed(1000);
-  ESC_3.speed(1000);
-  ESC_4.speed(1000);
-  //delay(5000);
-  /*
-    ESC_1.speed(1800);
-    ESC_2.speed(1800);
-    ESC_3.speed(1800);
-    ESC_4.speed(1800);
-    delay(1000);
-    ESC_1.speed(1000);
-    ESC_2.speed(1000);
-    ESC_3.speed(1000);
-    ESC_4.speed(1000);
-    delay(5000);
-     for (oESC = SPEED_MIN; oESC <= SPEED_MAX; oESC += 1) {  // goes from SPEED_MIN microseconds to SPEED_MAX microseconds
-     ESC_1.speed(oESC);
-     ESC_2.speed(oESC);
-     ESC_3.speed(oESC);
-     ESC_4.speed(oESC);
-     }
-     delay(2000);
-     for (oESC = SPEED_MAX; oESC >= SPEED_MIN; oESC -= 1) {  // goes from SPEED_MAX microseconds to SPEED_MIN microseconds
-     ESC_1.speed(oESC);
-     ESC_2.speed(oESC);
-     ESC_3.speed(oESC);
-     ESC_4.speed(oESC);
-     }
-     delay(10000);
-    myESC4.speed(1000);
-    delay(1000);
-    myESC1.speed(2000);
-    delay(5000);                                            // waits 10ms for the ESC to reach speed
-    myESC1.speed(1000);
-    delay(1000);
-    myESC2.speed(2000);
-    delay(5000);
-    myESC2.speed(1000);
-    delay(1000);
-    myESC3.speed(2000);
-    delay(5000);
-    myESC3.speed(1000);
-    delay(1000);
-    myESC4.speed(2000);
-    delay(5000);
-  */
+void setupIMU() {
+  Serial.println("Adafruit LSM6DSOX test!");
+  if (!IMU_DSOX.begin_I2C()) {
+    Serial.println("Failed to find LSM6DSOX chip");
+  }
+  Serial.println("LSM6DSOX Found!");
+  Serial.print("Accelerometer range set to: ");  // IMU_DSOX.setAccelRange(LSM6DS_ACCEL_RANGE_2_G);
+  switch (IMU_DSOX.getAccelRange()) {
+    case LSM6DS_ACCEL_RANGE_2_G:
+      Serial.println("+-2G");
+      break;
+    case LSM6DS_ACCEL_RANGE_4_G:
+      Serial.println("+-4G");
+      break;
+    case LSM6DS_ACCEL_RANGE_8_G:
+      Serial.println("+-8G");
+      break;
+    case LSM6DS_ACCEL_RANGE_16_G:
+      Serial.println("+-16G");
+      break;
+  }
+  Serial.print("Gyro range set to: ");  // IMU_DSOX.setGyroRange(LSM6DS_GYRO_RANGE_250_DPS );
+  switch (IMU_DSOX.getGyroRange()) {
+    case LSM6DS_GYRO_RANGE_125_DPS:
+      Serial.println("125 degrees/s");
+      break;
+    case LSM6DS_GYRO_RANGE_250_DPS:
+      Serial.println("250 degrees/s");
+      break;
+    case LSM6DS_GYRO_RANGE_500_DPS:
+      Serial.println("500 degrees/s");
+      break;
+    case LSM6DS_GYRO_RANGE_1000_DPS:
+      Serial.println("1000 degrees/s");
+      break;
+    case LSM6DS_GYRO_RANGE_2000_DPS:
+      Serial.println("2000 degrees/s");
+      break;
+    case ISM330DHCX_GYRO_RANGE_4000_DPS:
+      break;  // unsupported range for the DSOX
+  }
+  Serial.print("Accelerometer data rate set to: ");  // IMU_DSOX.setAccelDataRate(LSM6DS_RATE_12_5_HZ);
+  switch (IMU_DSOX.getAccelDataRate()) {
+    case LSM6DS_RATE_SHUTDOWN:
+      Serial.println("0 Hz");
+      break;
+    case LSM6DS_RATE_12_5_HZ:
+      Serial.println("12.5 Hz");
+      break;
+    case LSM6DS_RATE_26_HZ:
+      Serial.println("26 Hz");
+      break;
+    case LSM6DS_RATE_52_HZ:
+      Serial.println("52 Hz");
+      break;
+    case LSM6DS_RATE_104_HZ:
+      Serial.println("104 Hz");
+      break;
+    case LSM6DS_RATE_208_HZ:
+      Serial.println("208 Hz");
+      break;
+    case LSM6DS_RATE_416_HZ:
+      Serial.println("416 Hz");
+      break;
+    case LSM6DS_RATE_833_HZ:
+      Serial.println("833 Hz");
+      break;
+    case LSM6DS_RATE_1_66K_HZ:
+      Serial.println("1.66 KHz");
+      break;
+    case LSM6DS_RATE_3_33K_HZ:
+      Serial.println("3.33 KHz");
+      break;
+    case LSM6DS_RATE_6_66K_HZ:
+      Serial.println("6.66 KHz");
+      break;
+  }
+  Serial.print("Gyro data rate set to: ");  // IMU_DSOX.setGyroDataRate(LSM6DS_RATE_12_5_HZ);
+  switch (IMU_DSOX.getGyroDataRate()) {
+    case LSM6DS_RATE_SHUTDOWN:
+      Serial.println("0 Hz");
+      break;
+    case LSM6DS_RATE_12_5_HZ:
+      Serial.println("12.5 Hz");
+      break;
+    case LSM6DS_RATE_26_HZ:
+      Serial.println("26 Hz");
+      break;
+    case LSM6DS_RATE_52_HZ:
+      Serial.println("52 Hz");
+      break;
+    case LSM6DS_RATE_104_HZ:
+      Serial.println("104 Hz");
+      break;
+    case LSM6DS_RATE_208_HZ:
+      Serial.println("208 Hz");
+      break;
+    case LSM6DS_RATE_416_HZ:
+      Serial.println("416 Hz");
+      break;
+    case LSM6DS_RATE_833_HZ:
+      Serial.println("833 Hz");
+      break;
+    case LSM6DS_RATE_1_66K_HZ:
+      Serial.println("1.66 KHz");
+      break;
+    case LSM6DS_RATE_3_33K_HZ:
+      Serial.println("3.33 KHz");
+      break;
+    case LSM6DS_RATE_6_66K_HZ:
+      Serial.println("6.66 KHz");
+      break;
+  }
+  Serial.println("IMU Setup!");
+  delay(1000);
 }
 
-void updateIMU() {
+void setupCompass() {
+  if (!mag.begin()) {
+    Serial.println("Ooops, no LIS2MDL detected ... Check your wiring!"); /* There was a problem detecting the LIS2MDL ... check your connections */
+    while (1)
+      ;
+  }
+  Serial.println("Compass Setup!");
+  delay(1000);
+}
 
+void loop() {
+  collect_data();
+  parse_data();
+  update_ESC();
+}
 
-  //  /* Get a new normalized sensor event */
+void collect_data(void) {
   sensors_event_t accel;
   sensors_event_t gyro;
   sensors_event_t temp;
   IMU_DSOX.getEvent(&accel, &gyro, &temp);
+  DataIn[lineCount][0] = accel.acceleration.x;
+  DataIn[lineCount][1] = accel.acceleration.y;
+  DataIn[lineCount][2] = accel.acceleration.z;
+  DataIn[lineCount][3] = gyro.gyro.x;
+  DataIn[lineCount][4] = gyro.gyro.y;
+  DataIn[lineCount][5] = gyro.gyro.z;
+  DataIn[lineCount][13] = temp.temperature;
+  sensors_event_t event;
+  mag.getEvent(&event);
+  float Pi = 3.14159;
+  float heading = (atan2(event.magnetic.y, event.magnetic.x) * 180) / Pi;  // Calculate the angle of the vector y,x
+  DataIn[lineCount][6] = heading;
+  lineCount++;
+  if (lineCount > DATA_AXIS) {
+    lineCount = 0;
+  }
+  for (uint16_t u = 0; u < DATA_DIGITS; u++) {
+    Serial.print(DataOut[u]);
+    Serial.print(", ");
+  }
+  Serial.println();
+}
 
-  debug("\t\tTemperature ");
-  debug(temp.temperature);
-  debugln(" deg C");
+void parse_data(void) {
+  for (uint16_t i = 0; i < DATA_DIGITS; i++) {
+    int16_t averageValue = 0;
+    for (uint16_t j = 0; j < DATA_AXIS; j++) {
+      averageValue = averageValue + DataIn[j][i];
+    }
+    averageValue = averageValue / DATA_AXIS;
+    DataOut[i] = averageValue;
+  }
+}
 
-  /* Display the results (acceleration is measured in m/s^2) */
-  debug("\t\tAccel X: ");
-  debug(accel.acceleration.x);
-  debug(" \tY: ");
-  debug(accel.acceleration.y);
-  debug(" \tZ: ");
-  debug(accel.acceleration.z);
-  debugln(" m/s^2 ");
-
-  /* Display the results (rotation is measured in rad/s) */
-  debug("\t\tGyro X: ");
-  debug(gyro.gyro.x);
-  debug(" \tY: ");
-  debug(gyro.gyro.y);
-  debug(" \tZ: ");
-  debug(gyro.gyro.z);
-  debugln(" radians/s ");
-  debugln();
-  delay(100);
-
+void update_ESC() {
+  int16_t forwardEnginesRPM = map(DataOut[0], 9, -9, 1030, 1180);
+  int16_t backwardEnginesRPM = map(DataOut[0], -9, 9, 1030, 1180);
+  ESC_2.speed(forwardEnginesRPM);
+  ESC_4.speed(forwardEnginesRPM);
+  ESC_1.speed(backwardEnginesRPM);
+  ESC_3.speed(backwardEnginesRPM);
 }
