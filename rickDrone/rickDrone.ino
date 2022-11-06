@@ -37,16 +37,16 @@
 
 #define SPEED_MIN (1000)  // Set the Minimum Speed in microseconds
 #define SPEED_MAX (2000)  // Set the Minimum Speed in microseconds
-#define ESC_PIN1 (20)     //(D08 Yellow)
-#define ESC_PIN2 (21)     //(D09 White)
-#define ESC_PIN3 (5)      //(D10 Blue)
-#define ESC_PIN4 (7)      //(D11 Green)
+#define ESC_PIN1 (21)     //(D08 Yellow)
+#define ESC_PIN2 (7)     //(D09 White)
+#define ESC_PIN3 (20)      //(D10 Blue)
+#define ESC_PIN4 (5)      //(D11 Green)
 #define DATA_DIGITS (15)  //how many data digits
-#define DATA_AXIS (20)    //how many rows of noise buffer and prediction
+#define DATA_AXIS (9)     //how many rows of noise buffer and prediction
 //  accX, accY, accZ, gyrX, gyrY, gyrZ, magHead, tof1, tof2, tof3, tof4, tof5, tof6, temp, misc
 int16_t DataIn[DATA_AXIS][DATA_DIGITS];
 int16_t DataOut[DATA_DIGITS];
-int16_t lineCount = 0;
+uint8_t lineCount = 0;
 uint16_t oESC;
 
 ESC ESC_1(ESC_PIN1, SPEED_MIN, SPEED_MAX, 500);
@@ -253,10 +253,16 @@ void parse_data(void) {
 }
 
 void update_ESC() {
-  int16_t forwardEnginesRPM = map(DataOut[0], 9, -9, 1030, 1180);
-  int16_t backwardEnginesRPM = map(DataOut[0], -9, 9, 1030, 1180);
-  ESC_2.speed(forwardEnginesRPM);
-  ESC_4.speed(forwardEnginesRPM);
-  ESC_1.speed(backwardEnginesRPM);
-  ESC_3.speed(backwardEnginesRPM);
+  int16_t lForwardEnginesMux = (DataOut[0] + DataOut[1]) / 2;
+  int16_t rForwardEnginesMux = (DataOut[0] + (-DataOut[1])) / 2;
+  int16_t lBackwardEnginesMux = ((-DataOut[0]) + DataOut[1]) / 2;
+  int16_t rBackwardEnginesMux = ((-DataOut[0]) + (-DataOut[1])) / 2;
+  uint16_t lForwardEnginesRPM = map(lForwardEnginesMux, 10, -10, 600, 1280);
+  uint16_t rForwardEnginesRPM = map(rForwardEnginesMux, 10, -10, 600, 1280);
+  uint16_t lBackwardEnginesRPM = map(lBackwardEnginesMux, 10, -10, 600, 1280);  
+  uint16_t rBackwardEnginesRPM = map(rBackwardEnginesMux, 10, -10, 600, 1280);
+  ESC_1.speed(lForwardEnginesRPM);
+  ESC_2.speed(rForwardEnginesRPM);
+  ESC_3.speed(lBackwardEnginesRPM);  
+  ESC_4.speed(rBackwardEnginesRPM);
 }
