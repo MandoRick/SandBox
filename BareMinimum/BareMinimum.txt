@@ -1,1 +1,22 @@
-The bare minimum of code needed to start an Arduino sketch. 
+Directions for chaning the default startup sketch in Arduino IDE 1 and 2
+
+For Arduino IDE 1
+Replace the file called BareMinimum.ino with the one provided 
+located: (local drive):\Arduino\examples\01.Basics\BareMinimum\BareMinimum.ino
+
+
+
+For Arduino IDE 2
+When a new sketch is created, Arduino IDE populates it with the bare minimum empty setup and loop functions.
+Some users may wish to adjust this code. That is now possible by specifying the path to a file containing the custom content in the advanced settings:
+
+Press Ctrl + Shift + P keyboard shortcut (Command + Shift + P for macOS users)
+ to open the "Command Palette".
+
+Select the "Preferences: Open Settings (UI)" command from the menu
+A "Preferences" tab will now open in the IDE
+In the "Search Settings" field, type arduino.sketch.inoBlueprint
+Add the path to the file containing your custom new sketch content in the field under the "Sketch: Ino Blueprint" setting
+Click the X icon on the "Preferences" tab
+Select File > Quit from the Arduino IDE menus
+Start the Arduino IDE
