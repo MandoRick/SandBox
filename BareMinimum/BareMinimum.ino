@@ -1,4 +1,4 @@
-/*-data-type------size---------description-----
+/*-data-type------size---------description----------------------
   boolean        (8 bit)   -  [true/false]
   byte           (8 bit)   -  [0-255] unsigned number
   char           (8 bit)   -  [-128 to 127] signed number
@@ -17,14 +17,14 @@
   int32_t        (32 bit)  -  [-2,147,483,648 - 2,147,483,647] signed number
   uint64_t       (64 bit)  -  [0-18,446,744,073,709,551,615] unsigned number
   int64_t        (64 bit)  -  [−9,223,372,036,854,775,808 - 9,223,372,036,854,775,807] signed number
-  --------------------------------------------
+  --------------------------------------------------------------
   camelCase                -  anything that changes
   snake_case               -  variable's that are exclusive in a function
   Snake_Case               -  CLASS/struct exclusave varables/functions
   iNVERTEDcAMELcASE        -  outside code that is being accessed [database]
   SNake_CAse               -  duplicate varables inside the case function [frequently used in library names]
   ALL_CAPS                 -  const varable names or defines
-  -------------by-jediRick--------------------
+  ------------- by jediRick & RefreshMyMind --------------------
 */
 
 #define debug 1     // 1 ON 0 OFF
