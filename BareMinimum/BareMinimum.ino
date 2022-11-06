@@ -37,6 +37,13 @@
 #endif
 #define ledPin  LED_BUILTIN
 
+#define myDelay 1     // 1 ON 0 OFF
+#if myDelay == 1
+#define delayer(x) delay(x)
+#else
+#define delayer(x)
+#endif
+
 //------- version stuff --------
 const String p_project = "default";
 const uint8_t version_hi = 0;
@@ -52,7 +59,7 @@ void versionPrint(void) {
 //------- end version stuff --------
 
 void setup() {
-  delay(2000);
+  delayer(2000);
   Serial.begin(9600);
   debugln("Serial started");
   versionPrint();
