@@ -1,0 +1,95 @@
+' =========================================================================
+'
+'   File....... Emic2_Demo.bs2
+'   Purpose.... Demonstration of the Emic 2 Text-to-Speech Module
+'   Author..... Joe Grand, Grand Idea Studio, Inc. [www.grandideastudio.com]
+'   E-mail..... support@parallax.com
+'   Updated.... 10 SEP 2015
+'
+'   {$STAMP BS2}
+'   {$PBASIC 2.5}
+'
+' =========================================================================
+
+' -----[ Program Description ]---------------------------------------------
+'
+' This program provides a simple demonstration of the Emic 2 Text-to-Speech
+' Module. Please refer to the product manual for full details of system 
+' functionality and capabilities.  
+'
+
+' -----[ Revision History ]------------------------------------------------
+'
+' 1.0: Initial release
+' 1.1: Added Select Voice command and a comment about BS2 missing the ":"
+' response for commands that respond quickly. 
+'
+
+' -----[ I/O Definitions ]-------------------------------------------------
+
+EMIC_TX	PIN		0		' Serial output (connects to Emic 2 SIN)
+EMIC_RX	PIN		1		' Serial input (connects to Emic 2 SOUT)
+
+
+' -----[ Constants ]-------------------------------------------------------
+
+#SELECT $STAMP
+  #CASE BS2, BS2E, BS2PE
+    T9600       CON     84
+  #CASE BS2SX, BS2P
+    T9600       CON     240
+#ENDSELECT
+
+EmicBaud		CON     T9600
+
+
+' -----[ Initialization ]--------------------------------------------------
+
+Init:
+  DEBUG CLS, "Emic 2 Text-to-Speech Module Demonstration", CR, CR
+
+  ' when the Emic 2 powers on, it takes about 3 seconds for it to successfully
+  ' initialize. it then sends a ":" character to indicate it's ready to accept
+  ' commands. if the Emic 2 is already initialized, a CR will also cause it
+  ' to send a ":"
+  DEBUG "Waiting for Emic 2..."
+  SEROUT EMIC_TX, EmicBaud, [CR]
+  'SERIN EMIC_RX, EmicBaud, 5000, No_Response, [WAIT(":")]  ' At 9600 baud, the BS2 misses the Emic 2's response for commands that respond quickly
+  DEBUG "Ready!", CR
+
+
+' -----[ Program Code ]----------------------------------------------------
+
+Main:
+  DEBUG "Changing my voice..."
+  SEROUT EMIC_TX, EmicBaud, ["N1", CR]   ' Send command
+  'SERIN EMIC_RX, EmicBaud, [WAIT(":")]  ' At 9600 baud, the BS2 misses the Emic 2's response for commands that respond quickly
+  DEBUG "Done!", CR
+
+  PAUSE 250  ' Short delay
+
+  DEBUG "Speaking some text..."
+  SEROUT EMIC_TX, EmicBaud, ["S", "Hello. My name is the Emic 2 Text-to-Speech module. I would like to sing you a song.", CR]  ' Send the desired string to convert to speech
+  SERIN EMIC_RX, EmicBaud, [WAIT(":")]  ' Wait here until the Emic 2 responds with a ":" indicating it's ready to accept the next command
+  DEBUG "Done!", CR
+
+  PAUSE 500  ' Short delay
+
+  DEBUG "Singing a song..."
+  SEROUT EMIC_TX, EmicBaud, ["D1", CR]  ' Play the built-in demonstration song. See the product manual for exact settings used to create this song.
+  SERIN EMIC_RX, EmicBaud, [WAIT(":")]  ' Wait here until the Emic 2 responds with a ":" indicating it's ready to accept the next command
+  DEBUG "Done!", CR
+
+  DEBUG CR, "Demonstration complete!"
+  END
+
+
+' -----[ Subroutines ]-----------------------------------------------------
+
+No_Response:
+  ' if we get here, it means we did not receive a ":" from the Emic 2
+  DEBUG "No response!", CR, CR, "Ending demonstration!"
+  END
+
+
+' -----[ End of File ]----------------------------------------------------

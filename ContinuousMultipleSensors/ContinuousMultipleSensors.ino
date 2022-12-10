@@ -40,8 +40,8 @@
 #define debug(x)
 #endif
 
-const uint8_t SENSOR_COUNT = 6;
-const uint8_t XSHUT_PINS[SENSOR_COUNT] = { 10, 11, 12, 13, 14, 15 };
+const uint8_t SENSOR_COUNT = 8;
+const uint8_t XSHUT_PINS[SENSOR_COUNT] = { 25, 15, 16, 17, 18, 19, 20, 21 };
 
 VL53L1X TOF_SENSORS[SENSOR_COUNT];
 

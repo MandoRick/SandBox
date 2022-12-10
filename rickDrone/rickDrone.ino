@@ -256,7 +256,7 @@ void update_ESC() {
   int16_t lForwardEnginesMux = (DataOut[0] + DataOut[1]) / 2;
   int16_t rForwardEnginesMux = (DataOut[0] + (-DataOut[1])) / 2;
   int16_t lBackwardEnginesMux = ((-DataOut[0]) + DataOut[1]) / 2;
-  int16_t rBackwardEnginesMux = ((-DataOut[0]) + (-DataOut[1])) / 2;
+  int16_t rBackwardEnginesMux = ((-DataOut[0]) + (-DataOut[1])) / 2;                                           
   uint16_t lForwardEnginesRPM = map(lForwardEnginesMux, 10, -10, 600, 1280);
   uint16_t rForwardEnginesRPM = map(rForwardEnginesMux, 10, -10, 600, 1280);
   uint16_t lBackwardEnginesRPM = map(lBackwardEnginesMux, 10, -10, 600, 1280);  
