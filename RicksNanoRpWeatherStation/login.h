@@ -1,2 +1,2 @@
-#define SECRET_SSID     "VM0604409"
-#define SECRET_PASS     "qv3TqmgtPgrc"
+#define SECRET_SSID     ""
+#define SECRET_PASS     ""
