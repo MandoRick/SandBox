@@ -30,14 +30,14 @@
 #include <GyverOLED.h>
 #include <GyverFIFO.h>
 
-GyverFIFO<uint32_t, 16> fifoBuff0;
-GyverFIFO<uint32_t, 16> fifoBuff1;
-GyverFIFO<uint32_t, 16> fifoBuff2;
+GyverFIFO<int16_t, 16> fifoBuff0;
+GyverFIFO<int16_t, 16> fifoBuff1;
+GyverFIFO<int16_t, 16> fifoBuff2;
 
 GyverOLED<SSD1306_128x64, OLED_BUFFER> oled;
 
-int32_t countNum[3] = { 0, 30000, 0 };
-int32_t buffNum[3] = { 0, 0, 0 };
+int16_t countNum[3] = { 0, 30000, 0 };
+int16_t buffNum[3] = { 0, 0, 0 };
 
 void setup() {
   Serial.begin(115200);
