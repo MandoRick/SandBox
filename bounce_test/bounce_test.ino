@@ -38,22 +38,30 @@
 //you can collision check multiple objects for example:
 //CollisionCheck colCheck1, colCheck2;
 //for this demo we will do one collision check
-CollisionCheck col1Check, col2Check, col3Check, col4Check;
+CollisionCheck col1Check, col2Check, col3Check, col4Check, col5Check, col6Check, col7Check, col8Check, col9Check;
 
 
-uint8_t ball[]{ 64, 32, 2, 2 };
+uint8_t ball1[]{ 96, 32, 6, 6 };
+uint8_t ball2[]{ 32, 32, 2, 2 };
 uint8_t object1[]{ 0, 0, 1, 64 };
 uint8_t object2[]{ 126, 0, 1, 64 };
 uint8_t object3[]{ 0, 0, 128, 1 };
 uint8_t object4[]{ 0, 63, 128, 1 };
 
-bool collis1Result = false;
-bool collis2Result = false;
-bool collis3Result = false;
-bool collis4Result = false;
+bool collis01Result = false;
+bool collis02Result = false;
+bool collis03Result = false;
+bool collis04Result = false;
+bool collis05Result = false;
+bool collis06Result = false;
+bool collis07Result = false;
+bool collis08Result = false;
+bool collis09Result = false;
 
-int incrementX = 1;
-int incrementY = 1;
+int incrementX1 = 1;
+int incrementY1 = 1;
+int incrementX2 = -1;
+int incrementY2 = -1;
 
 GyverOLED<SSD1306_128x64, OLED_BUFFER> oled;
 
@@ -69,36 +77,66 @@ void loop() {
   collisionChecks();
   moveBall();
   drawBall();
-  //delay(25);
+  //delay(5);
 }
 
 void collisionChecks() {
   //collisionDetection(obj1X, obj1Y, obj1W, obj1H, obj2X, obj2Y, obj2W, obj2H);
-  collis1Result = col1Check.collisionCheck(ball[0], ball[1], ball[2], ball[3], object1[0], object1[1], object1[2], object1[3]);
-  collis2Result = col1Check.collisionCheck(ball[0], ball[1], ball[2], ball[3], object2[0], object2[1], object2[2], object2[3]);
-  collis3Result = col1Check.collisionCheck(ball[0], ball[1], ball[2], ball[3], object3[0], object3[1], object3[2], object3[3]);
-  collis4Result = col1Check.collisionCheck(ball[0], ball[1], ball[2], ball[3], object4[0], object4[1], object4[2], object4[3]);
-  if (collis1Result) {
-    incrementX = 1;
-    collis1Result = false;
+  collis01Result = col1Check.collisionCheck(ball1[0], ball1[1], ball1[2], ball1[3], object1[0], object1[1], object1[2], object1[3]);
+  collis02Result = col2Check.collisionCheck(ball1[0], ball1[1], ball1[2], ball1[3], object2[0], object2[1], object2[2], object2[3]);
+  collis03Result = col3Check.collisionCheck(ball1[0], ball1[1], ball1[2], ball1[3], object3[0], object3[1], object3[2], object3[3]);
+  collis04Result = col4Check.collisionCheck(ball1[0], ball1[1], ball1[2], ball1[3], object4[0], object4[1], object4[2], object4[3]);
+  collis05Result = col5Check.collisionCheck(ball2[0], ball2[1], ball2[2], ball2[3], object1[0], object1[1], object1[2], object1[3]);
+  collis06Result = col6Check.collisionCheck(ball2[0], ball2[1], ball2[2], ball2[3], object2[0], object2[1], object2[2], object2[3]);
+  collis07Result = col7Check.collisionCheck(ball2[0], ball2[1], ball2[2], ball2[3], object3[0], object3[1], object3[2], object3[3]);
+  collis08Result = col8Check.collisionCheck(ball2[0], ball2[1], ball2[2], ball2[3], object4[0], object4[1], object4[2], object4[3]);
+  collis09Result = col9Check.collisionCheck(ball1[0], ball1[1], ball1[2], ball1[3], ball2[0], ball2[1], ball2[2], ball2[3]);
+  if (collis09Result) {
+    incrementX1 = -incrementX1;
+    //incrementY1 = -incrementY1;
+    incrementX2 = -incrementX2;
+    //incrementY2 = -incrementY2;
+    collis09Result = false;
   }
-  if (collis2Result) {
-    incrementX = -1;
-    collis2Result = false;
+  if (collis01Result) {
+    incrementX1 = 1;
+    collis01Result = false;
   }
-  if (collis3Result) {
-    incrementY = 1;
-    collis3Result = false;
+  if (collis02Result) {
+    incrementX1 = -1;
+    collis02Result = false;
   }
-  if (collis4Result) {
-    incrementY = -1;
-    collis4Result = false;
+  if (collis03Result) {
+    incrementY1 = 1;
+    collis03Result = false;
+  }
+  if (collis04Result) {
+    incrementY1 = -1;
+    collis04Result = false;
+  }
+  if (collis05Result) {
+    incrementX2 = 1;
+    collis05Result = false;
+  }
+  if (collis06Result) {
+    incrementX2 = -1;
+    collis06Result = false;
+  }
+  if (collis07Result) {
+    incrementY2 = 1;
+    collis07Result = false;
+  }
+  if (collis08Result) {
+    incrementY2 = -1;
+    collis08Result = false;
   }
 }
 
 void moveBall() {
-  ball[0] = ball[0] + incrementX;
-  ball[1] = ball[1] + incrementY;
+  ball1[0] = ball1[0] + incrementX1;
+  ball1[1] = ball1[1] + incrementY1;
+  ball2[0] = ball2[0] + incrementX2;
+  ball2[1] = ball2[1] + incrementY2;
 }
 
 void drawBall() {
@@ -107,6 +145,9 @@ void drawBall() {
   oled.rect(object2[0], object2[1], object2[2], object2[3], OLED_STROKE);
   oled.rect(object3[0], object3[1], object3[2], object3[3], OLED_STROKE);
   oled.rect(object4[0], object4[1], object4[2], object4[3], OLED_STROKE);
-  oled.circle(ball[0], ball[1], ball[2], OLED_STROKE);
+ //oled.rect(ball1[0], ball1[1], ball1[0] + ball1[2], ball1[1] + ball1[3], OLED_STROKE);
+  //oled.rect(ball2[0], ball2[1], ball2[0] + ball2[2], ball2[1] + ball2[3], OLED_STROKE);
+  oled.circle(ball1[0] + (ball1[2] / 2), ball1[1] + (ball1[2] / 2), ball1[2], OLED_STROKE);
+  oled.circle(ball2[0] + (ball2[2] / 2), ball2[1] + (ball2[2] / 2), ball2[2], OLED_STROKE);
   oled.update();
 }
