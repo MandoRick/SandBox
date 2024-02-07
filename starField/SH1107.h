@@ -80,6 +80,34 @@ public:
     }
   }
 
+  // Draw a filled circle at the specified center coordinates with the specified radius and color
+  void fillCircle(int x0, int y0, int radius, uint8_t color) {
+    for (int y = -radius; y <= radius; y++) {
+      for (int x = -radius; x <= radius; x++) {
+        if (x * x + y * y <= radius * radius) {
+          drawPixel(x0 + x, y0 + y, color);
+        }
+      }
+    }
+  }
+
+  // Draw a rectangle with the specified coordinates, width, height, and color
+  void drawRectangle(int x1, int y1, int x2, int y2, uint8_t color) {
+    drawLine(x1, y1, x2, y1, color);  // Top line
+    drawLine(x1, y1, x1, y2, color);  // Left line
+    drawLine(x2, y1, x2, y2, color);  // Right line
+    drawLine(x1, y2, x2, y2, color);  // Bottom line
+  }
+
+  // Fill a rectangle with the specified coordinates, width, height, and color
+  void fillRectangle(int x1, int y1, int x2, int y2, uint8_t color) {
+    for (int x = x1; x <= x2; x++) {
+      for (int y = y1; y <= y2; y++) {
+        drawPixel(x, y, color);
+      }
+    }
+  }
+
   // Draw a line between two points with the specified color
   void drawLine(int x0, int y0, int x1, int y1, uint8_t color) {
     int dx = abs(x1 - x0);
