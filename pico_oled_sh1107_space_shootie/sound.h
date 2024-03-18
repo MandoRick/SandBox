@@ -78,10 +78,7 @@
 #define NOTE_B8 7902
 #define NOTE_C8 8372
 
-
-// Define note durations.  You only need to adjust the whole note
-// time and other notes will be subdivided from it directly.
-#define WHOLE 2200  // Length of time in milliseconds of a whole note (i.e. a full bar).
+#define WHOLE 2200
 #define HALF WHOLE / 2
 #define QUARTER HALF / 2
 #define EIGHTH QUARTER / 2
@@ -92,245 +89,14 @@
 #define HUNDREDTWENTYEIGHTH SIXTYFOURTH / 2
 #define TWOHUNREDFIFTYSIXTH HUNDREDTWENTYEIGHTH / 2
 
-// Play a note of the specified frequency and for the specified duration.
-// Hold is an optional bool that specifies if this note should be held a
-// little longer, i.e. for eighth notes that are tied together.
-// While waiting for a note to play the waitBreath delay function is used
-// so breath detection and pixel animation continues to run.  No tones
-// will play if the slide switch is in the -/off position or all the
-// candles have been blown out.
 void playNote(int frequency, int duration, bool hold = false, bool measure = true) {
   (void)measure;
-
   if (hold) {
-    // For a note that's held play it a little longer than the specified duration
-    // so it blends into the next tone (but there's still a small delay to
-    // hear the next note).
     tone(PIN_BUZZER, frequency, duration + duration / 32);
   } else {
-    // For a note that isn't held just play it for the specified duration.
     tone(PIN_BUZZER, frequency, duration);
   }
-
   delay(duration + duration / 16);
-}
-
-// Song to play when the candles are blown out.
-void celebrateSong() {
-  // Play a little charge melody, from:
-  //  https://en.wikipedia.org/wiki/Charge_(fanfare)
-  // Note the explicit boolean parameters in particular the measure=false
-  // at the end.  This means the notes will play without any breath measurement
-  // logic.  Without this false value playNote will try to keep waiting for candles
-  // to blow out during the celebration song!
-  playNote(NOTE_G4, EIGHTH_TRIPLE, true, false);
-  playNote(NOTE_C5, EIGHTH_TRIPLE, true, false);
-  playNote(NOTE_E5, EIGHTH_TRIPLE, false, false);
-  playNote(NOTE_G5, EIGHTH, true, false);
-  playNote(NOTE_E5, SIXTEENTH, false);
-  playNote(NOTE_G5, HALF, false);
-}
-
-
-void shootieSound() {
-  // Play happy birthday tune, from:
-  //  http://www.irish-folk-songs.com/happy-birthday-tin-whistle-sheet-music.html#.WXFJMtPytBw
-  // Inside each playNote call it will play a note and drive the NeoPixel animation
-  // and check for a breath against the sound sensor.  Once all the candles are blown out
-  // the playNote calls will stop playing music.
-  playNote(NOTE_D4, EIGHTH, true);
-  playNote(NOTE_D4, EIGHTH);
-  playNote(NOTE_E4, QUARTER);  // Bar 1
-  playNote(NOTE_D4, QUARTER);
-  playNote(NOTE_G4, QUARTER);
-  playNote(NOTE_FS4, HALF);  // Bar 2
-  playNote(NOTE_D4, EIGHTH, true);
-  playNote(NOTE_D4, EIGHTH);
-  playNote(NOTE_E4, QUARTER);  // Bar 3
-  playNote(NOTE_D4, QUARTER);
-  playNote(NOTE_A4, QUARTER);
-  playNote(NOTE_G4, HALF);  // Bar 4
-  playNote(NOTE_D4, EIGHTH, true);
-  playNote(NOTE_D4, EIGHTH);
-  playNote(NOTE_D5, QUARTER);  // Bar 5
-  playNote(NOTE_B4, QUARTER);
-  playNote(NOTE_G4, QUARTER);
-  playNote(NOTE_FS4, QUARTER);  // Bar 6
-  playNote(NOTE_E4, QUARTER);
-  playNote(NOTE_C5, EIGHTH, true);
-  playNote(NOTE_C5, EIGHTH);
-  playNote(NOTE_B4, QUARTER);  // Bar 7
-  playNote(NOTE_G4, QUARTER);
-  playNote(NOTE_A4, QUARTER);
-  playNote(NOTE_G4, HALF);  // Bar 8
-}
-
-void testSound() {
-  // Define durations for testing
-  int durations[] = { SIXTEENTH, EIGHTH, QUARTER, HALF, WHOLE };
-
-  // Iterate over each duration
-  for (int durIndex = 0; durIndex < 5; durIndex++) {
-    int duration = durations[durIndex];
-    Serial.print("Playing notes with duration: ");
-    Serial.print(duration);
-    Serial.println("ms");
-
-    // Iterate over each note
-    for (int noteIndex = 0; noteIndex < 47; noteIndex++) {
-      int note;
-      switch (noteIndex) {
-        case 0:
-          note = NOTE_A3;
-          break;
-        case 1:
-          note = NOTE_AS3;
-          break;
-        case 2:
-          note = NOTE_G3;
-          break;
-        case 3:
-          note = NOTE_GS3;
-          break;
-        case 4:
-          note = NOTE_F3;
-          break;
-        case 5:
-          note = NOTE_FS3;
-          break;
-        case 6:
-          note = NOTE_E3;
-          break;
-        case 7:
-          note = NOTE_DS3;
-          break;
-        case 8:
-          note = NOTE_D3;
-          break;
-        case 9:
-          note = NOTE_C3;
-          break;
-        case 10:
-          note = NOTE_B3;
-          break;
-        case 11:
-          note = NOTE_C4;
-          break;
-        case 12:
-          note = NOTE_CS4;
-          break;
-        case 13:
-          note = NOTE_D4;
-          break;
-        case 14:
-          note = NOTE_DS4;
-          break;
-        case 15:
-          note = NOTE_E4;
-          break;
-        case 16:
-          note = NOTE_F4;
-          break;
-        case 17:
-          note = NOTE_FS4;
-          break;
-        case 18:
-          note = NOTE_G4;
-          break;
-        case 19:
-          note = NOTE_GS4;
-          break;
-        case 20:
-          note = NOTE_A4;
-          break;
-        case 21:
-          note = NOTE_AS4;
-          break;
-        case 22:
-          note = NOTE_B4;
-          break;
-        case 23:
-          note = NOTE_C5;
-          break;
-        case 24:
-          note = NOTE_CS5;
-          break;
-        case 25:
-          note = NOTE_D5;
-          break;
-        case 26:
-          note = NOTE_DS5;
-          break;
-        case 27:
-          note = NOTE_E5;
-          break;
-        case 28:
-          note = NOTE_F5;
-          break;
-        case 29:
-          note = NOTE_FS5;
-          break;
-        case 30:
-          note = NOTE_G5;
-          break;
-        case 31:
-          note = NOTE_GS5;
-          break;
-        case 32:
-          note = NOTE_A5;
-          break;
-        case 33:
-          note = NOTE_AS5;
-          break;
-        case 34:
-          note = NOTE_B5;
-          break;
-        case 35:
-          note = NOTE_C6;
-          break;
-        case 36:
-          note = NOTE_CS6;
-          break;
-        case 37:
-          note = NOTE_D6;
-          break;
-        case 38:
-          note = NOTE_DS6;
-          break;
-        case 39:
-          note = NOTE_E6;
-          break;
-        case 40:
-          note = NOTE_F6;
-          break;
-        case 41:
-          note = NOTE_FS6;
-          break;
-        case 42:
-          note = NOTE_G6;
-          break;
-        case 43:
-          note = NOTE_GS6;
-          break;
-        case 44:
-          note = NOTE_A6;
-          break;
-        case 45:
-          note = NOTE_AS6;
-          break;
-        case 46:
-          note = NOTE_B6;
-          break;
-        case 47:
-          note = NOTE_C7;
-          break;
-      }
-
-      tone(PIN_BUZZER, note, duration);
-      delay(duration + duration / 16);  // Pause between notes
-      noTone(PIN_BUZZER);
-    }
-  }
 }
 
 void playAsteroidsTune() {
@@ -347,14 +113,9 @@ void playAsteroidsTune() {
     32, 32, 32, 32, 32, 32, 32, 32,
     32, 32, 32, 32, 32, 32, 32, 16
   };
-
-  // Iterate over the notes
   for (int thisNote = 0; thisNote < 32; thisNote++) {
-    // Calculate the duration of each note
     int noteDuration = WHOLE / noteDurations[thisNote];
     playNote(melody[thisNote], noteDuration, true);
-
-    // Pause between notes
     int pauseBetweenNotes = noteDuration * 1.30;
     delay(pauseBetweenNotes);
   }
