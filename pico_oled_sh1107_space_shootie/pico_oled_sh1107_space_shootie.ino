@@ -28,7 +28,7 @@
 */
 
 #include <GyverFIFO.h>
-#include <Wire.h>  // Include Wire library for I2C communication
+#include <Wire.h>
 #include "sh1107.h"
 #include "data.h"
 #include "sound.h"
@@ -37,7 +37,7 @@
 #define BUTTON_PIN_1 6
 #define BUTTON_PIN_2 7
 #define BUTTON_PIN_3 8
-#define BUTTONDEBOUNCETIME 5  // Adjust this value as needed for your setup
+#define BUTTONDEBOUNCETIME 5
 
 #define DISP_W 128
 #define DISP_H 128
@@ -166,20 +166,16 @@ void drawLogo() {
 }
 
 void drawReady() {
-  // Draw "READY"
   int startX = (DISP_W - 5 * 10) / 2;  // Calculate the starting X position for "READY"
   int startY = (DISP_H - 7) / 2;       // Calculate the starting Y position for "READY"
-
   for (int i = 0; i < 5; i++) {
     drawLetter(startX + i * 10, startY, READY[i]);
   }
 }
 
 void drawDead() {
-  // Draw "DEAD"
   int startX = (DISP_W - 4 * 10) / 2;  // Calculate the starting X position for "DEAD"
   int startY = (DISP_H - 7) / 2;       // Calculate the starting Y position for "DEAD"
-
   for (int i = 0; i < 4; i++) {
     drawLetter(startX + i * 10, startY, DEAD[i]);
   }
@@ -344,7 +340,7 @@ void checkShipCollision() {
       // Collision detected, decrease lives
       player_lives--;
       soundBuffer[9].write(1);
-      
+
       // Move the asteroid to a new random position
       asteroids_data[i][0] = random(DISP_W);
       asteroids_data[i][1] = random(DISP_H);
@@ -405,8 +401,6 @@ void checkButtons() {
 }
 
 void setup1() {
-  Serial.begin(115200);
-  delay(250);
   pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_BUZZER, LOW);
   delay(2000);
@@ -417,28 +411,15 @@ void setup1() {
   }
 }
 
-
 void loop1() {
-  //playAsteroidsTune();
-  //testSound();
-  //shootieSound();
   readBuffer();
   processAudio();
-  //celebrateSong();
-
-  // One second pause before repeating the loop and playing
-  //delay(30000);
 }
 
 void readBuffer() {
   for (int i = 0; i < BUFFER_QTY; i++) {
     audioArray[i] = soundBuffer[i].read();
   }
-  for (int i = 0; i < BUFFER_QTY; i++) {
-    Serial.print(audioArray[i]);
-    Serial.print(",");
-  }
-  Serial.println("");
 }
 
 void processAudio() {
