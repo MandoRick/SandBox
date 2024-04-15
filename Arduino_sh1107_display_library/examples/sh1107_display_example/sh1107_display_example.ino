@@ -27,39 +27,37 @@
   ------------- by jediRick & RefreshMyMind --------------------
 */
 
-/*
-1 3v
-2 gnd
-3 SDA (19)
-4 SCL (18)
-5 CS  (15)
-6 DC  (12)
-7 RESET (13)
-8 BUSY  (14)
+#include <sh1107.h>
 
-#define EPD_WIDTH       176
-#define EPD_HEIGHT      264
+#define DISP_W 128
+#define DISP_H 128
 
-*/
+#define WHITE 1
+#define BLACK 0
 
-#include <SPI.h>
-#include "ER-EPM027-1B.h"
-#include "imagedata.h"
-
-uint32_t sleepTimer = 10000;
-
-Epd epd;
+SH1107 display;
 
 void setup() {
-  Serial.begin(115200);
-  epd.Init();
-  epd.DisplayFrame(LOGO);
-  sleep_ms(sleepTimer);  
+  display.begin();
+  clearDisplay();
+  //drawPixel(int x, int y, uint8_t color)
+  display.drawPixel(64, 64, WHITE);
+  //drawCircle(int x0, int y0, int radius, uint8_t color)
+  display.drawCircle(64, 64, 20, WHITE);
+  //drawLine(int x0, int y0, int x1, int y1, uint8_t color)
+  display.drawLine(5, 5, 50, 5, WHITE);
+  display.display();
+  delay(10000);
 }
 
-void loop() {  
-  epd.DisplayFrame(ID1);
-  sleep_ms(sleepTimer);
-  epd.DisplayFrame(ID2);
-  sleep_ms(sleepTimer);
+void loop() {
+
+}
+
+void clearDisplay() {
+  for (int x = 0; x < DISP_W; x++) {
+    for (int y = 0; y < DISP_H; y++) {
+      display.drawPixel(x, y, BLACK);
+    }
+  }
 }

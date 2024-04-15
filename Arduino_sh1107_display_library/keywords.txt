@@ -1,0 +1,3 @@
+drawPixel		KEYWORD1
+drawCircle		KEYWORD2
+drawLine		KEYWORD3

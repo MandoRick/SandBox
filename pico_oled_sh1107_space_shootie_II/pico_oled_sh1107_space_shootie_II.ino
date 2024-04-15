@@ -49,7 +49,7 @@
 
 #define SCORE_DIGIT_QTY 6
 #define ASTEROID_QTY 6
-#define ASTEROID_DATA_PTS 5  // x, y, radius, heading, speed
+#define ASTEROID_DATA_PTS 4  // x, y, radius, speed
 
 #define BUFFER_QTY 10
 
@@ -60,7 +60,6 @@
 struct Projectile {
   int x;
   int y;
-  int heading;   // Direction of movement (angle in degrees)
   int lifespan;  // Remaining frames before the projectile disappears
   float speedX;  // Velocity component along the X-axis
   float speedY;  // Velocity component along the Y-axis
@@ -74,9 +73,8 @@ int player_score = 0;
 int player_lives = 4;
 int playerScoreArray[SCORE_DIGIT_QTY];
 
-int ship_heading = 0;
 int ship_X = DISP_W / 2;
-int ship_Y = DISP_H / 2;
+int ship_Y = DISP_H - 20;
 
 int asteroids_data[ASTEROID_QTY][ASTEROID_DATA_PTS];
 
@@ -84,8 +82,6 @@ volatile bool BUTTON_STATE[BUTTON_QTY];
 volatile unsigned long lastDebounceTime[BUTTON_QTY] = { 0 };
 
 volatile bool audioArray[BUFFER_QTY];
-
-float ship_velocity = 0.0;  // Initial velocity
 
 SH1107 display;
 
@@ -105,7 +101,6 @@ void setup() {
   clearDisplay();
   drawReady();
   display.display();
-  ship_velocity = 0.0;
   delay(3000);
 }
 
@@ -118,9 +113,6 @@ void loop() {
 
   updatePlayerScoreArray();
   updateProjectiles();
-  if (ship_velocity != 0.0) {
-    updateShipPosition();
-  }
   drawDisplay();
   //delay(5);
 }
@@ -152,24 +144,17 @@ void setupAsteroids() {
   for (int i = 0; i < ASTEROID_QTY; i++) {
     int x = random(DISP_W);
     asteroids_data[i][0] = x;
-  }
-  for (int i = 0; i < ASTEROID_QTY; i++) {
-    int y = random(DISP_H);
+    int y = 0;
     asteroids_data[i][1] = y;
-  }
-  for (int i = 0; i < ASTEROID_QTY; i++) {
     int radius = random(3, 8);
     asteroids_data[i][2] = radius;
-  }
-  for (int i = 0; i < ASTEROID_QTY; i++) {
-    int heading = random(359);
+    int heading = 180;
     asteroids_data[i][3] = heading;
-  }
-  for (int i = 0; i < ASTEROID_QTY; i++) {
     int speed = random(1, 2);
-    asteroids_data[i][4] = speed;
+    asteroids_data[i][3] = speed; // Note: Changed to [3] to stay within bounds
   }
 }
+
 
 void clearDisplay() {
   for (int x = 0; x < DISP_W; x++) {
@@ -231,12 +216,12 @@ void drawLives() {
 }
 
 void drawShip() {
-  calcShip(ship_X, ship_Y, ship_heading);
+  calcShip(ship_X, ship_Y);
 }
 
 void drawAsteroids() {
   for (int i = 0; i < ASTEROID_QTY; i++) {
-    calcAsteroids(asteroids_data[i][0], asteroids_data[i][1], asteroids_data[i][3], asteroids_data[i][4]);
+    calcAsteroids(asteroids_data[i][0], asteroids_data[i][1], asteroids_data[i][3]);
     display.drawCircle(asteroids_data[i][0], asteroids_data[i][1], asteroids_data[i][2], WHITE);
 
     // Update the asteroid's position in the array
@@ -300,51 +285,40 @@ void calcLives(int x, int y) {
   display.drawLine(x2, y2, x3, y3, WHITE);
 }
 
-void calcShip(int x, int y, int angle) {
-  // Convert angle from degrees to radians
-  float rad = angle * PI / 180.0;
-
+void calcShip(int x, int y) {
   // Define ship dimensions
-  float sideLength = 6.0;  // Length of each side
+  int shipWidth = 12;  // Width of the ship
+  int shipHeight = 6;  // Height of the ship
 
-  // Calculate the coordinates of the vertices of an equilateral triangle
-  float x1 = x + sideLength * cos(rad);  // Top point
-  float y1 = y + sideLength * sin(rad);
-  float x2 = x + sideLength * cos(rad + 2 * PI / 3);  // Bottom-left point
-  float y2 = y + sideLength * sin(rad + 2 * PI / 3);
-  float x3 = x + sideLength * cos(rad - 2 * PI / 3);  // Bottom-right point
-  float y3 = y + sideLength * sin(rad - 2 * PI / 3);
+  // Calculate the coordinates of the ship's vertices
+  int x1 = x - shipWidth / 2;   // Top-left x-coordinate
+  int y1 = y - shipHeight / 2;  // Top-left y-coordinate
+  int x2 = x + shipWidth / 2;   // Top-right x-coordinate
+  int y2 = y - shipHeight / 2;  // Top-right y-coordinate
+  int x3 = x + shipWidth / 2;   // Bottom-right x-coordinate
+  int y3 = y + shipHeight / 2;  // Bottom-right y-coordinate
+  int x4 = x - shipWidth / 2;   // Bottom-left x-coordinate
+  int y4 = y + shipHeight / 2;  // Bottom-left y-coordinate
 
-  // Draw the lines forming the rotated triangle
-  display.drawLine(round(x1), round(y1), round(x2), round(y2), WHITE);
-  display.drawLine(round(x1), round(y1), round(x3), round(y3), WHITE);
-  display.drawLine(round(x2), round(y2), round(x3), round(y3), WHITE);
+  // Draw the ship (rectangle)
+  display.drawLine(x1, y1, x2, y2, WHITE);  // Top side
+  display.drawLine(x2, y2, x3, y3, WHITE);  // Right side
+  display.drawLine(x3, y3, x4, y4, WHITE);  // Bottom side
+  display.drawLine(x4, y4, x1, y1, WHITE);  // Left side
 }
 
-void calcAsteroids(int& x, int& y, int heading, int speed) {
-  // Convert heading from degrees to radians
-  float rad = heading * PI / 180.0;
 
-  // Calculate the change in position along x and y axes
-  float deltaX = speed * cos(rad);
-  float deltaY = speed * sin(rad);
-
-  // Update the position of the asteroid
-  x += round(deltaX);
-  y += round(deltaY);
+void calcAsteroids(int& x, int& y, int speed) {
+  // Calculate the change in position along the y-axis (downward direction)
+  y += speed;
 
   // Wrap around the display if the asteroid goes out of bounds
-  if (x < 0) {
-    x += DISP_W;
-  } else if (x >= DISP_W) {
-    x -= DISP_W;
-  }
-  if (y < 0) {
-    y += DISP_H;
-  } else if (y >= DISP_H) {
-    y -= DISP_H;
+  if (y >= DISP_H) {
+    y = 0;               // Reset y-coordinate to the top of the display
+    x = random(DISP_W);  // Randomize x-coordinate for a new position
   }
 }
+
 
 void checkShipCollision() {
   // Radius of the ship (assumed to be the same for simplicity)
@@ -378,8 +352,6 @@ void checkShipCollision() {
     player_score = 0;
     player_lives = 4;
     ship_X = DISP_W / 2;
-    ship_Y = DISP_H / 2;
-    ship_velocity = 0.0;
   }
 }
 
@@ -397,27 +369,7 @@ void triggerButton2() {
   if (millis() - lastDebounceTime[1] > BUTTONDEBOUNCETIME) {
     lastDebounceTime[1] = millis();
     BUTTON_STATE[1] = digitalRead(BUTTON_PIN_2);
-    if (BUTTON_STATE[1]) {
-      // Increase ship's velocity when button 2 is pressed
-      ship_velocity += 0.1;  // Adjust the acceleration factor as needed
-    } else {
-      // Decrease ship's velocity when button 2 is released
-      ship_velocity -= 0.05;  // Adjust the deceleration factor as needed
-    }
   }
-
-  // Limit ship's velocity to a maximum value (optional)
-  ship_velocity = constrain(ship_velocity, 0.0, 3.0);  // Adjust the maximum velocity as needed
-
-  // Calculate thrust components based on ship's heading and velocity
-  float thrustFactor = ship_velocity;  // Adjust as needed
-  float rad = ship_heading * PI / 180.0;
-  float deltaX = thrustFactor * cos(rad);  // Adjust the thrust factor as needed
-  float deltaY = thrustFactor * sin(rad);  // Adjust the thrust factor as needed
-
-  // Update the ship's position continuously
-  ship_X = (int)(ship_X + round(deltaX) + DISP_W) % DISP_W;  // Update ship's position horizontally
-  ship_Y = (int)(ship_Y + round(deltaY) + DISP_H) % DISP_H;  // Update ship's position vertically
 }
 
 void triggerButton3() {
@@ -450,7 +402,7 @@ void checkButtons() {
     soundBuffer[2].write(1);
   }
   int sensorValue = analogRead(ANALOG_PIN);
-  ship_heading = map(sensorValue, 0, 1023, 0, 359);
+  ship_X = map(sensorValue, 0, 1023, 0, 127);
 }
 
 // Initialize Projectile Array
@@ -464,10 +416,9 @@ void initProjectiles() {
 void updateProjectiles() {
   for (int i = 0; i < MAX_PROJECTILES; i++) {
     if (projectiles[i].lifespan > 0) {
-      // Move the projectile
-      float rad = projectiles[i].heading * PI / 180.0;
-      projectiles[i].x += round(PROJECTILE_SPEED * cos(rad));
-      projectiles[i].y += round(PROJECTILE_SPEED * sin(rad));
+      // Move the projectile upward
+      projectiles[i].x += round(projectiles[i].speedX);  // No horizontal movement
+      projectiles[i].y += round(projectiles[i].speedY);
 
       // Decrement the lifespan
       projectiles[i].lifespan--;
@@ -485,20 +436,17 @@ void fireProjectile() {
       // Set projectile properties
       projectiles[i].x = ship_X;  // Initial position at the ship's position
       projectiles[i].y = ship_Y;
-      projectiles[i].heading = ship_heading;          // Initial heading same as ship's heading
       projectiles[i].lifespan = PROJECTILE_LIFESPAN;  // Set lifespan
 
-      // Calculate velocity components based on ship's velocity and heading
-      float rad = radians(ship_heading);                         // Convert heading to radians
-      float projectileSpeed = PROJECTILE_SPEED + ship_velocity;  // Projectile speed includes ship's velocity
-      projectiles[i].speedX = projectileSpeed * cos(rad);        // Calculate speedX component
-      projectiles[i].speedY = projectileSpeed * sin(rad);        // Calculate speedY component
+      // Calculate velocity components based on a constant speed (upward direction)
+      float projectileSpeed = PROJECTILE_SPEED;  // Projectile speed includes ship's velocity
+      projectiles[i].speedX = 0;  // No horizontal movement for projectiles
+      projectiles[i].speedY = -projectileSpeed;  // Negative value for upward movement
 
       break;  // Exit loop after firing one projectile
     }
   }
 }
-
 
 void drawProjectiles() {
   for (int i = 0; i < MAX_PROJECTILES; i++) {
@@ -543,15 +491,12 @@ void destroyProjectile(int projectileIndex) {
 }
 
 void updateShipPosition() {
-  // Calculate thrust components based on ship's heading and a constant factor
-  float thrustFactor = 1.0;  // Adjust as needed
-  float rad = ship_heading * PI / 180.0;
-  float deltaX = thrustFactor * cos(rad);  // Adjust the thrust factor as needed
-  float deltaY = thrustFactor * sin(rad);  // Adjust the thrust factor as needed
+  // Read the analog input from the potentiometer
+  int potValue = analogRead(ANALOG_PIN);
 
-  // Update the ship's position continuously
-  ship_X = (int)(ship_X + round(deltaX) + DISP_W) % DISP_W;  // Update ship's position horizontally
-  ship_Y = (int)(ship_Y + round(deltaY) + DISP_H) % DISP_H;  // Update ship's position vertically
+  // Map the potentiometer value to the display width
+  // Assuming the potentiometer range is 0-1023 and display width is DISP_W
+  ship_X = map(potValue, 0, 1023, 0, DISP_W);
 }
 
 void setup1() {

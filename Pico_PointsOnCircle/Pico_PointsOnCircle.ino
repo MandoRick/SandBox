@@ -27,39 +27,48 @@
   ------------- by jediRick & RefreshMyMind --------------------
 */
 
-/*
-1 3v
-2 gnd
-3 SDA (19)
-4 SCL (18)
-5 CS  (15)
-6 DC  (12)
-7 RESET (13)
-8 BUSY  (14)
-
-#define EPD_WIDTH       176
-#define EPD_HEIGHT      264
-
+/*  Points on a circle Library
+    by: JediRick and RefreshMyMind
+    wokwi example link: https://wokwi.com/projects/373856384697578497
 */
 
-#include <SPI.h>
-#include "ER-EPM027-1B.h"
-#include "imagedata.h"
+#include <GyverOLED.h>
+#include "data.h"
+#include "PointsOnCircle.h"
 
-uint32_t sleepTimer = 10000;
+#define OLED_SPEED (1999999ul)
+#define DISP_W 128
+#define DISP_H 64
+#define CENTER_X 64
+#define CENTER_Y 32
 
-Epd epd;
+GyverOLED<SSD1306_128x64, OLED_BUFFER> oled;
+PointsOnCircle circlePoints;
 
 void setup() {
   Serial.begin(115200);
-  epd.Init();
-  epd.DisplayFrame(LOGO);
-  sleep_ms(sleepTimer);  
+  oled.init();
+  //Wire.setClock(OLED_SPEED);
 }
 
-void loop() {  
-  epd.DisplayFrame(ID1);
-  sleep_ms(sleepTimer);
-  epd.DisplayFrame(ID2);
-  sleep_ms(sleepTimer);
+void loop() {
+  drawDisplay();
+  delay(250);
+}
+
+void drawDisplay() {
+  for (float i = 0; i < 360; i += 10) {
+    int x1, y1, x2, y2;
+    int radius1 = 24;
+    int radius2 = 30;
+    float angle_degrees = i;
+    PointsOnCircle::Point result1 = circlePoints.calculate_point_on_circle(radius1, CENTER_X, CENTER_Y, angle_degrees);
+    x1 = result1.x;
+    y1 = result1.y;
+    PointsOnCircle::Point result2 = circlePoints.calculate_point_on_circle(radius2, CENTER_X, CENTER_Y, angle_degrees);
+    x2 = result2.x;
+    y2 = result2.y;
+    oled.line(x1, y1, x2, y2);
+  }
+  oled.update();
 }
